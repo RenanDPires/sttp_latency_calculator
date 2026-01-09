@@ -1,0 +1,2 @@
+pyinstaller --onefile --name sttp_latency_calculator main.py
+Copy-Item .\config.yaml .\dist\config.yaml -Force
