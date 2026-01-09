@@ -38,6 +38,7 @@ class SttpLatencySubscriber(Subscriber):
         arrival_epoch = self.clock.now_epoch()
 
         for m in measurements:
+            
             md = self.measurement_metadata(m)
             key = self.key_extractor.key_from(m, md)
 
