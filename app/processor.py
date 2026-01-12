@@ -56,6 +56,8 @@ class ShardedWindowProcessor:
 
         while not self.stop.is_set():
             ev = q.get()
+            if ev is None:
+                return
             try:
                 lm = latency_ms(ev.t_arrival_epoch, ev.t_meas_epoch)
                 with lock:
@@ -94,3 +96,6 @@ class ShardedWindowProcessor:
 
     def shutdown(self) -> None:
         self.stop.set()
+        for q in self.queues:
+            q.put(None)
+

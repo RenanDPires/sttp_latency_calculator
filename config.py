@@ -5,9 +5,8 @@ import os
 import sys
 from dataclasses import dataclass
 from typing import Mapping, Any
-
-import yaml  # pip install pyyaml
-
+from infra.sttp_subscriber import _build_subscription_from_map
+import yaml
 
 @dataclass(frozen=True)
 class TickWriteConfig:
@@ -51,9 +50,7 @@ def _coerce_ppa_map(obj: Any) -> dict[int, int]:
     return out
 
 
-def _build_subscription_from_map(ppa_map: Mapping[int, int]) -> str:
-    srcs = sorted(int(k) for k in ppa_map.keys())
-    return "; ".join(f"PPA:{ppa}" for ppa in srcs)
+
 
 
 def _app_dir() -> str:
@@ -120,7 +117,7 @@ def load_config() -> AppConfig:
     cfg_path = _find_config_path()
     cfg = _load_file_config(cfg_path)
 
-    # ---- base (SEM DEFAULTS) ----
+    # ---- base ----
     hostname = _require(cfg, "hostname", "root")
     port = int(_require(cfg, "port", "root"))
     window_sec = float(_require(cfg, "window_sec", "root"))
@@ -128,7 +125,7 @@ def load_config() -> AppConfig:
     shards = int(_require(cfg, "shards", "root"))
     queue_size = int(_require(cfg, "queue_size", "root"))
 
-    # ---- tick_write (SEM DEFAULTS) ----
+    # ---- tick_write ----
     tw = _require(cfg, "tick_write", "root")
     if not isinstance(tw, dict):
         raise SystemExit("tick_write deve ser um objeto.")

@@ -1,5 +1,7 @@
 from gsf import Limits
 
+import logging
+
 from config import load_config
 from app.processor import ShardedWindowProcessor
 from app.pipeline import LatencyPipeline, WindowPolicy
@@ -24,7 +26,7 @@ def main():
     sink = PrintSink()
     policy = WindowPolicy(window_sec=cfg.window_sec, top_n=cfg.top_n)
 
-    # ---- tick write (sempre ligado, como você pediu)
+    
     tick_sink = HttpTickSink(
         cfg.tick_write.url,
         workers=cfg.tick_write.workers,

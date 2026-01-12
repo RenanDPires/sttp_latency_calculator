@@ -51,13 +51,13 @@ class LatencyPipeline:
         self._last_batch_size = batch_size
 
     def submit(self, ev: LatencyEvent) -> None:
-        # 1) mantém o comportamento atual: janela
+        # 1) Comportamenteo por janela
         self.processor.submit(ev)
 
         # 2) latência por tick (ms)
         lat_ms = (ev.t_arrival_epoch - ev.t_meas_epoch) * 1000.0
 
-        # 3) map src (key) -> dst (ppa de salvamento)
+        # 3) map src (key) -> dst (ppa de salvamento) -- Leitura/escrita
         ppa_dst = self.ppa_mapper.try_map(ev.key)
         if ppa_dst is None:
             return
