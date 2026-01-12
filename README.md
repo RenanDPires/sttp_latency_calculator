@@ -75,16 +75,17 @@ Copiar código
 
 ##  Build do Executável (Windows)
 
-### 1. Criar o executável
+### Criar o executável
 
-```powershell
+powershell
 pyinstaller --onefile --name sttp_latency_calculator main.py
+
 2. Copiar o arquivo de configuração
 powershell
 Copiar código
 Copy-Item .\config.yaml .\dist\config.yaml -Force
 Estrutura final esperada
-arduino
+
 Copiar código
 dist/
  ├─ sttp_latency_calculator.exe
@@ -92,7 +93,7 @@ dist/
  O executável não embute o config.yaml.
 O usuário deve editar esse arquivo manualmente.
 
-▶️ Execução
+### Execução
 Execução direta (Python)
 bash
 Copiar código
@@ -109,7 +110,7 @@ Diretório atual
 
 Diretório do executável
 
- Configuração (config.yaml)
+### Configuração (config.yaml)
 Exemplo completo
 yaml
 Copiar código
@@ -130,7 +131,7 @@ tick_write:
   max_retries: 3
   drop_on_full: true
 
-  # Mapeamento: PPA origem (STTP) → PPA destino (salvamento)
+  ### Mapeamento: PPA origem (STTP) → PPA destino (salvamento)
   ppa_map:
     2397: 1002397
     2401: 1002401
@@ -155,7 +156,7 @@ ppa_map	Mapeamento src → dst
 
 Se um PPA não estiver no ppa_map, não será publicado via HTTP.
 
- Saídas do Sistema
+## Saídas do Sistema
 1. Relatório por janela (stdout)
 Exemplo:
 
@@ -183,7 +184,7 @@ tempo sempre em UTC
 
 indicator em milissegundos
 
- Decisões de Projeto Importantes
+## Decisões de Projeto Importantes
 Fail-fast: configuração inválida encerra a aplicação.
 
 Sem defaults perigosos: tudo deve ser explicitado.
@@ -194,7 +195,7 @@ Backpressure explícito: descarte controlado.
 
 Domínio isolado: fácil de testar e evoluir.
 
- Testes e Validação
+## Testes e Validação
 Recomendado testar:
 
 Latência com relógio desalinhado
@@ -205,7 +206,7 @@ STTP com bursts grandes
 
 Endpoint HTTP indisponível (retry)
 
- Troubleshooting
+## Troubleshooting
 Programa não encontra config.yaml
 Verifique diretório atual
 
@@ -226,6 +227,6 @@ Verifique drop_on_full
 
 Cheque métricas internas (total_failed, total_dropped)
 
- Licença
+## Licença
+LabPlan 2026
 Projeto interno / técnico.
-Ajuste conforme política do laboratório ou organização.
