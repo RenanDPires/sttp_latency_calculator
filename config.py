@@ -152,43 +152,50 @@ def load_config(path: str = "config.yaml") -> AppConfig:
 
     subscription = str(_opt(data, "subscription", ""))
 
-    tw = _req(data, "tick_write")
+    # ---- tick_write (opcional) ----
+    tw_raw = _opt(data, "tick_write", None)
+    tick_write = None
 
-    url = _req(tw, "url")
-    server_ip = _req(tw, "server_ip")
+    tw_enabled = bool(_opt(tw_raw, "enabled", True))  # default True p/ manter comportamento antigo
 
-    workers = int(_opt(tw, "workers", 4))
-    queue_max = int(_opt(tw, "queue_max", 5000))
-    timeout_sec = float(_opt(tw, "timeout_sec", 2.0))
-    max_retries = int(_opt(tw, "max_retries", 3))
-    drop_on_full = bool(_opt(tw, "drop_on_full", False))
+    if isinstance(tw_raw, Mapping):
+        if tw_enabled:
+            url = _req(tw_raw, "url")
+            server_ip = _req(tw_raw, "server_ip")
 
-    latency_raw = _opt(tw, "ppa_map_latency", None)
-    frames_raw = _opt(tw, "ppa_map_frames", None)
-    legacy_raw = _opt(tw, "ppa_map", None)
+            workers = int(_opt(tw_raw, "workers", 4))
+            queue_max = int(_opt(tw_raw, "queue_max", 5000))
+            timeout_sec = float(_opt(tw_raw, "timeout_sec", 2.0))
+            max_retries = int(_opt(tw_raw, "max_retries", 3))
+            drop_on_full = bool(_opt(tw_raw, "drop_on_full", False))
 
-    if latency_raw is None and frames_raw is None and legacy_raw is not None:
-        ppa_map_latency = _to_int_map(legacy_raw, "tick_write.ppa_map")
-        ppa_map_frames = dict(ppa_map_latency)
-    else:
-        if latency_raw is None:
-            raise ValueError("Config inválida: campo obrigatório 'tick_write.ppa_map_latency' ausente.")
-        if frames_raw is None:
-            raise ValueError("Config inválida: campo obrigatório 'tick_write.ppa_map_frames' ausente.")
-        ppa_map_latency = _to_int_map(latency_raw, "tick_write.ppa_map_latency")
-        ppa_map_frames = _to_int_map(frames_raw, "tick_write.ppa_map_frames")
+            latency_raw = _opt(tw_raw, "ppa_map_latency", None)
+            frames_raw = _opt(tw_raw, "ppa_map_frames", None)
+            legacy_raw = _opt(tw_raw, "ppa_map", None)
 
-    tick_write = TickWriteConfig(
-        url=str(url),
-        server_ip=str(server_ip),
-        workers=workers,
-        queue_max=queue_max,
-        timeout_sec=timeout_sec,
-        max_retries=max_retries,
-        drop_on_full=drop_on_full,
-        ppa_map_latency=ppa_map_latency,
-        ppa_map_frames=ppa_map_frames,
-    )
+            if latency_raw is None and frames_raw is None and legacy_raw is not None:
+                ppa_map_latency = _to_int_map(legacy_raw, "tick_write.ppa_map")
+                ppa_map_frames = dict(ppa_map_latency)
+            else:
+                if latency_raw is None:
+                    raise ValueError("Config inválida: campo obrigatório 'tick_write.ppa_map_latency' ausente.")
+                if frames_raw is None:
+                    raise ValueError("Config inválida: campo obrigatório 'tick_write.ppa_map_frames' ausente.")
+                ppa_map_latency = _to_int_map(latency_raw, "tick_write.ppa_map_latency")
+                ppa_map_frames = _to_int_map(frames_raw, "tick_write.ppa_map_frames")
+
+            tick_write = TickWriteConfig(
+                url=str(url),
+                server_ip=str(server_ip),
+                workers=workers,
+                queue_max=queue_max,
+                timeout_sec=timeout_sec,
+                max_retries=max_retries,
+                drop_on_full=drop_on_full,
+                ppa_map_latency=ppa_map_latency,
+                ppa_map_frames=ppa_map_frames,
+            )
+
 
     # ---- threshold_monitor (opcional) ----
     tm_raw = _opt(data, "threshold_monitor", None)

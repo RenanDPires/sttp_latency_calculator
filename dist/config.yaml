@@ -1,12 +1,13 @@
 hostname: localhost
 port: 7165
 
-window_sec: 1.0
+window_sec: 10
 top_n: 10
 shards: 8
 queue_size: 100000
 
 tick_write:
+  enabled: true
   url: "http://localhost:8010/write"
   server_ip: "localhost"
 
@@ -16,6 +17,25 @@ tick_write:
   max_retries: 3
   drop_on_full: false
 
-  ppa_map:
+# 1 PPA de entrada -> 2 PPAs de saída (latência média e frames por janela)
+  ppa_map_latency:
     477: 2397
-    886: 2398
+    2423: 2401
+
+  ppa_map_frames:
+    477: 2399
+    2423: 2400
+
+
+threshold_monitor:
+  enabled: true
+  csv_path: "violations.csv"
+  flush_every_n: 200
+  flush_every_sec: 2.0
+  queue_max: 20000
+  drop_on_full: true
+  rules:
+    2108:
+      - op: ">"
+        value: 60
+        rule_id: "PPACOPPE_maior_60"

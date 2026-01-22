@@ -7,6 +7,7 @@ shards: 8
 queue_size: 100000
 
 tick_write:
+  enabled: true
   url: "http://localhost:8010/write"
   server_ip: "localhost"
 
@@ -36,5 +37,5 @@ threshold_monitor:
   rules:
     2108:
       - op: ">"
-        value: 60.07
+        value: 60
         rule_id: "PPACOPPE_maior_60"

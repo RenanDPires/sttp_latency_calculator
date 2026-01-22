@@ -62,11 +62,9 @@ class SttpLatencySubscriber(Subscriber):
             md = self.measurement_metadata(m)
             key = int(self.key_extractor.key_from(m, md))
 
-            # timestamp do measurement (baseado no relógio do measurement)
             t_meas_epoch = m.datetime.timestamp()
             value = float(m.value)
 
-            # (A) Monitor de violações: roda para qualquer PPA que tenha regra
             if self.threshold_monitor is not None and self.violation_sink is not None:
                 violations = self.threshold_monitor.check(
                     now_epoch=arrival_epoch,
@@ -74,11 +72,10 @@ class SttpLatencySubscriber(Subscriber):
                     value=value,
                 )
                 for v in violations:
-                    # enqueue não-bloqueante (CSV/SQL assíncrono)
                     self.violation_sink.publish(v)
 
-            # (B) Pipeline de stats: somente para PPAs mapeados (stats_keys)
-            if self.stats_keys and key not in self.stats_keys:
+            
+            if key not in self.stats_keys:
                 continue
 
             ev = LatencyEvent(
@@ -86,12 +83,12 @@ class SttpLatencySubscriber(Subscriber):
                 t_meas_epoch=t_meas_epoch,
                 t_arrival_epoch=arrival_epoch,
                 flags=int(m.flags),
-                value=float(m.value),
+                value=value,
             )
-
             self.pipeline.submit(ev)
 
         self.pipeline.maybe_flush()
+
 
     def connection_terminated(self):
         self.default_connectionterminated_receiver()
