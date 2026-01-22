@@ -43,3 +43,8 @@ class PpaDestinations:
 class PpaMapper(Protocol):
     def try_map(self, ppa_in: int) -> Optional[PpaDestinations]:
         ...
+
+from typing import Protocol, Any
+class ViolationSink(Protocol):
+    def publish(self, ev: Any) -> None:
+        ...

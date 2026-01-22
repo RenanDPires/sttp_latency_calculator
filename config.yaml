@@ -25,3 +25,16 @@ tick_write:
     477: 2399
     2423: 2400
 
+
+threshold_monitor:
+  enabled: true
+  csv_path: "violations.csv"
+  flush_every_n: 200
+  flush_every_sec: 2.0
+  queue_max: 20000
+  drop_on_full: true
+  rules:
+    2108:
+      - op: ">"
+        value: 60.07
+        rule_id: "PPACOPPE_maior_60"

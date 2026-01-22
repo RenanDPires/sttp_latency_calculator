@@ -6,6 +6,8 @@ from typing import Any, Mapping
 
 import yaml
 
+from domain.thresholds import ThresholdRule
+
 
 @dataclass(frozen=True)
 class TickWriteConfig:
@@ -18,9 +20,23 @@ class TickWriteConfig:
     max_retries: int = 3
     drop_on_full: bool = False
 
-    # NOVO: dois destinos por PPA de entrada
     ppa_map_latency: dict[int, int] = None  # type: ignore
     ppa_map_frames: dict[int, int] = None   # type: ignore
+
+
+@dataclass(frozen=True)
+class ThresholdMonitorConfig:
+    enabled: bool = False
+
+    csv_path: str = "violations.csv"
+    queue_max: int = 20000
+    drop_on_full: bool = True
+    flush_every_n: int = 200
+    flush_every_sec: float = 2.0
+    cooldown_sec: float = 0.0
+
+    # dict[ppa_in] -> list[ThresholdRule]
+    rules: dict[int, list[ThresholdRule]] = None  # type: ignore
 
 
 @dataclass(frozen=True)
@@ -36,6 +52,7 @@ class AppConfig:
     subscription: str = ""
 
     tick_write: TickWriteConfig = None  # type: ignore
+    threshold_monitor: ThresholdMonitorConfig | None = None
 
 
 def _req(d: Mapping[str, Any], path: str) -> Any:
@@ -68,6 +85,59 @@ def _to_int_map(x: Any, path: str) -> dict[int, int]:
     return out
 
 
+def _to_rules_map(x: Any, path: str) -> dict[int, list[ThresholdRule]]:
+    """
+    Espera:
+      threshold_monitor:
+        rules:
+          9999:
+            - op: ">"
+              value: 0
+              rule_id: "PPA9999_GT0"
+              atol: 0.0   # opcional
+    """
+    if x is None:
+        return {}
+    if not isinstance(x, Mapping):
+        raise ValueError(f"Config inválida: '{path}' deve ser um mapa (dict).")
+
+    out: dict[int, list[ThresholdRule]] = {}
+
+    for ppa_k, rules_list in x.items():
+        ppa = int(ppa_k)
+
+        if not isinstance(rules_list, list):
+            raise ValueError(f"Config inválida: '{path}.{ppa_k}' deve ser uma lista de regras.")
+
+        parsed: list[ThresholdRule] = []
+        for i, r in enumerate(rules_list):
+            if not isinstance(r, Mapping):
+                raise ValueError(f"Config inválida: '{path}.{ppa_k}[{i}]' deve ser um objeto.")
+
+            op = r.get("op")
+            val = r.get("value")
+            rule_id = r.get("rule_id")
+            atol = float(r.get("atol", 0.0))
+
+            if op is None or val is None or rule_id is None:
+                raise ValueError(
+                    f"Config inválida: '{path}.{ppa_k}[{i}]' precisa de op, value, rule_id."
+                )
+
+            parsed.append(
+                ThresholdRule(
+                    op=str(op),          # validação final acontece no uso
+                    value=float(val),
+                    rule_id=str(rule_id),
+                    atol=atol,
+                )
+            )
+
+        out[ppa] = parsed
+
+    return out
+
+
 def load_config(path: str = "config.yaml") -> AppConfig:
     p = Path(path)
     data = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
@@ -93,28 +163,18 @@ def load_config(path: str = "config.yaml") -> AppConfig:
     max_retries = int(_opt(tw, "max_retries", 3))
     drop_on_full = bool(_opt(tw, "drop_on_full", False))
 
-    # --- NOVO formato ---
     latency_raw = _opt(tw, "ppa_map_latency", None)
     frames_raw = _opt(tw, "ppa_map_frames", None)
-
-    # --- Compatibilidade com formato antigo (ppa_map) ---
     legacy_raw = _opt(tw, "ppa_map", None)
 
     if latency_raw is None and frames_raw is None and legacy_raw is not None:
-        # mantém latência do mapa antigo
         ppa_map_latency = _to_int_map(legacy_raw, "tick_write.ppa_map")
-
-        # frames: por padrão exige que você defina explicitamente,
-        # mas para não quebrar execução, criamos um placeholder igual ao latency.
-        # Melhor: você trocar no YAML para um mapa real de frames.
         ppa_map_frames = dict(ppa_map_latency)
-
     else:
         if latency_raw is None:
             raise ValueError("Config inválida: campo obrigatório 'tick_write.ppa_map_latency' ausente.")
         if frames_raw is None:
             raise ValueError("Config inválida: campo obrigatório 'tick_write.ppa_map_frames' ausente.")
-
         ppa_map_latency = _to_int_map(latency_raw, "tick_write.ppa_map_latency")
         ppa_map_frames = _to_int_map(frames_raw, "tick_write.ppa_map_frames")
 
@@ -130,6 +190,33 @@ def load_config(path: str = "config.yaml") -> AppConfig:
         ppa_map_frames=ppa_map_frames,
     )
 
+    # ---- threshold_monitor (opcional) ----
+    tm_raw = _opt(data, "threshold_monitor", None)
+    threshold_monitor = None
+
+    if isinstance(tm_raw, Mapping):
+        enabled = bool(_opt(tm_raw, "enabled", False))
+        csv_path = str(_opt(tm_raw, "csv_path", "violations.csv"))
+        tm_queue_max = int(_opt(tm_raw, "queue_max", 20000))
+        tm_drop = bool(_opt(tm_raw, "drop_on_full", True))
+        flush_n = int(_opt(tm_raw, "flush_every_n", 200))
+        flush_s = float(_opt(tm_raw, "flush_every_sec", 2.0))
+        cooldown = float(_opt(tm_raw, "cooldown_sec", 0.0))
+
+        rules_raw = _opt(tm_raw, "rules", None)
+        rules = _to_rules_map(rules_raw, "threshold_monitor.rules")
+
+        threshold_monitor = ThresholdMonitorConfig(
+            enabled=enabled,
+            csv_path=csv_path,
+            queue_max=tm_queue_max,
+            drop_on_full=tm_drop,
+            flush_every_n=flush_n,
+            flush_every_sec=flush_s,
+            cooldown_sec=cooldown,
+            rules=rules,
+        )
+
     return AppConfig(
         hostname=str(hostname),
         port=port,
@@ -139,4 +226,5 @@ def load_config(path: str = "config.yaml") -> AppConfig:
         queue_size=queue_size,
         subscription=subscription,
         tick_write=tick_write,
+        threshold_monitor=threshold_monitor,
     )

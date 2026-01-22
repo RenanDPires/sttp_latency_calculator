@@ -1,6 +1,5 @@
 from gsf import Limits
 
-import logging
 import re
 
 from config import load_config
@@ -13,6 +12,13 @@ from infra.sttp_client import SttpLatencySubscriber
 
 from infra.http_tick_sink import HttpTickSink
 from infra.ppa_mapper import DictPpaMapper
+
+from app.threshold_monitor import ThresholdMonitor, ThresholdMonitorConfig
+from infra.violations_csv_sink import AsyncCsvViolationWriter
+
+
+def _extract_ppas_from_subscription(text: str) -> list[int]:
+    return [int(x) for x in re.findall(r"\bPPA\s*:\s*(\d+)\b", text or "", flags=re.IGNORECASE)]
 
 
 def main():
@@ -29,24 +35,49 @@ def main():
             f"lat_only={sorted(k_lat - k_frm)} frames_only={sorted(k_frm - k_lat)}"
         )
 
-    # ---- subscription: se não vier no YAML, gera a partir dos PPAs de entrada ----
+    # ---- prepara monitor de violações (opcional) ----
+    threshold_monitor = None
+    violation_writer = None
+    monitor_keys: set[int] = set()
+
+    if cfg.threshold_monitor and cfg.threshold_monitor.enabled:
+        # regras por PPA (dict[int, list[ThresholdRule]])
+        rules_by_ppa = cfg.threshold_monitor.rules
+        monitor_keys = set(int(k) for k in rules_by_ppa.keys())
+
+        threshold_monitor = ThresholdMonitor(
+            rules_by_ppa=rules_by_ppa,
+            cfg=ThresholdMonitorConfig(cooldown_sec=cfg.threshold_monitor.cooldown_sec),
+        )
+
+        violation_writer = AsyncCsvViolationWriter(
+            cfg.threshold_monitor.csv_path,
+            queue_max=cfg.threshold_monitor.queue_max,
+            drop_on_full=cfg.threshold_monitor.drop_on_full,
+            flush_every_n=cfg.threshold_monitor.flush_every_n,
+            flush_every_sec=cfg.threshold_monitor.flush_every_sec,
+        )
+        violation_writer.start()
+
+        print(f"[violations] enabled=True csv={cfg.threshold_monitor.csv_path} rules_ppas={sorted(monitor_keys)}")
+    else:
+        print("[violations] enabled=False")
+
+    # ---- subscription: se não vier no YAML, gera a partir da união (stats ∪ monitor) ----
+    stats_keys = set(int(k) for k in cfg.tick_write.ppa_map_latency.keys())
+
     subscription = (cfg.subscription or "").strip()
     if not subscription:
-        keys = sorted(int(k) for k in cfg.tick_write.ppa_map_latency.keys())
-        subscription = "; ".join(f"PPA:{k}" for k in keys)
+        union_keys = sorted(stats_keys | monitor_keys)
+        subscription = "; ".join(f"PPA:{k}" for k in union_keys)
 
     print("subscription repr:", repr(subscription))
-    ppas = [
-        int(x)
-        for x in re.findall(r"\bPPA\s*:\s*(\d+)\b", subscription, flags=re.IGNORECASE)
-    ]
-    print("PPAs solicitados na subscription:", ppas)
+    print("PPAs solicitados na subscription:", _extract_ppas_from_subscription(subscription))
 
-    # (opcional, mas útil) mostrar claramente o roteamento IN -> OUTs
-    for k in sorted(cfg.tick_write.ppa_map_latency.keys()):
-        k = int(k)
+    # (útil) mostrar roteamento IN -> OUTs (somente stats)
+    for k in sorted(stats_keys):
         print(
-            f"PPA_IN {k} -> latency_out {cfg.tick_write.ppa_map_latency[k]} "
+            f"[stats-map] PPA_IN {k} -> latency_out {cfg.tick_write.ppa_map_latency[k]} "
             f"| frames_out {cfg.tick_write.ppa_map_frames[k]}"
         )
 
@@ -84,7 +115,16 @@ def main():
 
     key_extractor = PpaKeyExtractor()
 
-    sub = SttpLatencySubscriber(pipeline=pipeline, clock=clock, key_extractor=key_extractor)
+    # IMPORTANTE: esse subscriber deve suportar stats_keys, threshold_monitor e violation_sink
+    sub = SttpLatencySubscriber(
+        pipeline=pipeline,
+        clock=clock,
+        key_extractor=key_extractor,
+        stats_keys=stats_keys,
+        threshold_monitor=threshold_monitor,
+        violation_sink=violation_writer,
+    )
+
     sub.config.compress_payloaddata = False
     sub.settings.udpport = 9600
     sub.settings.use_millisecondresolution = True
@@ -101,7 +141,11 @@ def main():
             try:
                 tick_sink.stop()
             finally:
-                sub.dispose()
+                try:
+                    if violation_writer is not None:
+                        violation_writer.stop()
+                finally:
+                    sub.dispose()
 
 
 if __name__ == "__main__":

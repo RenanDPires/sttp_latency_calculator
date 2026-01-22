@@ -2,13 +2,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, List, Tuple
 
+
 @dataclass(frozen=True)
 class LatencyEvent:
     key: int
     t_meas_epoch: float
     t_arrival_epoch: float
-    flags: int
-    value: float
+
+    # mantêm compatibilidade com quem já envia
+    flags: int = 0
+    value: float = 0.0
 
 @dataclass
 class WindowStats:

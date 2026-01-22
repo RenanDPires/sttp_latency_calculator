@@ -1,19 +1,29 @@
 from __future__ import annotations
+
 from sttp.subscriber import Subscriber
 from sttp.config import Config
 from sttp.settings import Settings
 from sttp.transport.measurement import Measurement
 from sttp.transport.signalindexcache import SignalIndexCache
-from typing import List
+from typing import List, Optional, Set
 
 from domain.models import LatencyEvent
-from domain.ports import Clock, KeyExtractor
+from domain.ports import Clock, KeyExtractor, ViolationSink
 from app.pipeline import LatencyPipeline
+from app.threshold_monitor import ThresholdMonitor
 
-from datetime import datetime
 
 class SttpLatencySubscriber(Subscriber):
-    def __init__(self, pipeline: LatencyPipeline, clock: Clock, key_extractor: KeyExtractor):
+    def __init__(
+        self,
+        pipeline: LatencyPipeline,
+        clock: Clock,
+        key_extractor: KeyExtractor,
+        *,
+        stats_keys: Optional[Set[int]] = None,
+        threshold_monitor: Optional[ThresholdMonitor] = None,
+        violation_sink: Optional[ViolationSink] = None,
+    ):
         super().__init__()
         self.config = Config()
         self.settings = Settings()
@@ -21,6 +31,14 @@ class SttpLatencySubscriber(Subscriber):
         self.pipeline = pipeline
         self.clock = clock
         self.key_extractor = key_extractor
+
+        # PPAs que entram no pipeline de stats (latência/frames)
+        self.stats_keys: Set[int] = set(int(x) for x in (stats_keys or set()))
+
+        # Monitor de violações (medidas) - independente do pipeline
+        self.threshold_monitor = threshold_monitor
+        self.violation_sink = violation_sink
+
         self._started = False
 
         self.set_subscriptionupdated_receiver(self.subscription_updated)
@@ -35,19 +53,33 @@ class SttpLatencySubscriber(Subscriber):
             self._started = True
             self.statusmessage("Receiving measurements...")
 
-        # print(datetime.now(),measurements)
-
+        # informa tamanho do batch (pipeline usa isso para report)
         self.pipeline.on_batch_received(batch_size=len(measurements))
 
         arrival_epoch = self.clock.now_epoch()
 
         for m in measurements:
-            
             md = self.measurement_metadata(m)
-            key = self.key_extractor.key_from(m, md)
+            key = int(self.key_extractor.key_from(m, md))
 
-            # baseline atual (igual ao seu código)
+            # timestamp do measurement (baseado no relógio do measurement)
             t_meas_epoch = m.datetime.timestamp()
+            value = float(m.value)
+
+            # (A) Monitor de violações: roda para qualquer PPA que tenha regra
+            if self.threshold_monitor is not None and self.violation_sink is not None:
+                violations = self.threshold_monitor.check(
+                    now_epoch=arrival_epoch,
+                    ppa=key,
+                    value=value,
+                )
+                for v in violations:
+                    # enqueue não-bloqueante (CSV/SQL assíncrono)
+                    self.violation_sink.publish(v)
+
+            # (B) Pipeline de stats: somente para PPAs mapeados (stats_keys)
+            if self.stats_keys and key not in self.stats_keys:
+                continue
 
             ev = LatencyEvent(
                 key=key,
@@ -56,6 +88,7 @@ class SttpLatencySubscriber(Subscriber):
                 flags=int(m.flags),
                 value=float(m.value),
             )
+
             self.pipeline.submit(ev)
 
         self.pipeline.maybe_flush()
