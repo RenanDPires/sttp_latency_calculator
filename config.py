@@ -1,162 +1,142 @@
 from __future__ import annotations
 
-import json
-import os
-import sys
 from dataclasses import dataclass
-from typing import Mapping, Any
-from infra.sttp_subscriber import _build_subscription_from_map
+from pathlib import Path
+from typing import Any, Mapping
+
 import yaml
+
 
 @dataclass(frozen=True)
 class TickWriteConfig:
     url: str
     server_ip: str
-    ppa_map: Mapping[int, int]
-    workers: int
-    queue_max: int
-    timeout_sec: float
-    max_retries: int
-    drop_on_full: bool
+
+    workers: int = 4
+    queue_max: int = 5000
+    timeout_sec: float = 2.0
+    max_retries: int = 3
+    drop_on_full: bool = False
+
+    # NOVO: dois destinos por PPA de entrada
+    ppa_map_latency: dict[int, int] = None  # type: ignore
+    ppa_map_frames: dict[int, int] = None   # type: ignore
 
 
 @dataclass(frozen=True)
 class AppConfig:
     hostname: str
     port: int
-    subscription: str
-    window_sec: float
-    shards: int
-    queue_size: int
-    top_n: int
-    tick_write: TickWriteConfig
+
+    window_sec: int = 10
+    top_n: int = 10
+    shards: int = 8
+    queue_size: int = 100000
+
+    subscription: str = ""
+
+    tick_write: TickWriteConfig = None  # type: ignore
 
 
-def _require(obj: dict, key: str, ctx: str):
-    if key not in obj:
-        raise SystemExit(f"Config inválida: campo obrigatório '{ctx}.{key}' ausente.")
-    return obj[key]
+def _req(d: Mapping[str, Any], path: str) -> Any:
+    cur: Any = d
+    for part in path.split("."):
+        if not isinstance(cur, Mapping) or part not in cur:
+            raise ValueError(f"Config inválida: campo obrigatório '{path}' ausente.")
+        cur = cur[part]
+    return cur
 
 
-def _coerce_ppa_map(obj: Any) -> dict[int, int]:
-    if not isinstance(obj, dict) or not obj:
-        raise SystemExit("tick_write.ppa_map deve ser um dict não vazio (src -> dst).")
+def _opt(d: Mapping[str, Any], path: str, default: Any) -> Any:
+    cur: Any = d
+    for part in path.split("."):
+        if not isinstance(cur, Mapping) or part not in cur:
+            return default
+        cur = cur[part]
+    return cur
+
+
+def _to_int_map(x: Any, path: str) -> dict[int, int]:
+    if not isinstance(x, Mapping):
+        raise ValueError(f"Config inválida: '{path}' deve ser um mapa (dict).")
     out: dict[int, int] = {}
-    for k, v in obj.items():
+    for k, v in x.items():
         try:
             out[int(k)] = int(v)
-        except Exception:
-            raise SystemExit(f"ppa_map inválido: chave={k}, valor={v}")
+        except Exception as e:
+            raise ValueError(f"Config inválida: '{path}' contém chave/valor não-inteiro: {k}:{v}") from e
     return out
 
 
+def load_config(path: str = "config.yaml") -> AppConfig:
+    p = Path(path)
+    data = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
 
+    hostname = _req(data, "hostname")
+    port = int(_req(data, "port"))
 
+    window_sec = int(_opt(data, "window_sec", 10))
+    top_n = int(_opt(data, "top_n", 10))
+    shards = int(_opt(data, "shards", 8))
+    queue_size = int(_opt(data, "queue_size", 100000))
 
-def _app_dir() -> str:
-    """
-    Diretório 'real' do app:
-    - em PyInstaller: sys.executable
-    - em Python normal: arquivo atual
-    """
-    if getattr(sys, "frozen", False):  # PyInstaller
-        return os.path.dirname(sys.executable)
-    return os.path.dirname(os.path.abspath(__file__))
+    subscription = str(_opt(data, "subscription", ""))
 
+    tw = _req(data, "tick_write")
 
-def _find_config_path() -> str:
-    tried: list[str] = []
+    url = _req(tw, "url")
+    server_ip = _req(tw, "server_ip")
 
-    env_path = os.getenv("CONFIG_PATH", "").strip()
-    if env_path:
-        tried.append(env_path)
-        if os.path.exists(env_path):
-            return env_path
+    workers = int(_opt(tw, "workers", 4))
+    queue_max = int(_opt(tw, "queue_max", 5000))
+    timeout_sec = float(_opt(tw, "timeout_sec", 2.0))
+    max_retries = int(_opt(tw, "max_retries", 3))
+    drop_on_full = bool(_opt(tw, "drop_on_full", False))
 
-    cwd = os.getcwd()
-    candidates_cwd = [
-        os.path.join(cwd, "config.yaml"),
-        os.path.join(cwd, "config.yml"),
-        os.path.join(cwd, "config.json"),
-    ]
-    for p in candidates_cwd:
-        tried.append(p)
-        if os.path.exists(p):
-            return p
+    # --- NOVO formato ---
+    latency_raw = _opt(tw, "ppa_map_latency", None)
+    frames_raw = _opt(tw, "ppa_map_frames", None)
 
-    ad = _app_dir()
-    candidates_app = [
-        os.path.join(ad, "config.yaml"),
-        os.path.join(ad, "config.yml"),
-        os.path.join(ad, "config.json"),
-    ]
-    for p in candidates_app:
-        tried.append(p)
-        if os.path.exists(p):
-            return p
+    # --- Compatibilidade com formato antigo (ppa_map) ---
+    legacy_raw = _opt(tw, "ppa_map", None)
 
-    msg = "Arquivo de configuração não encontrado. Procurei:\n" + "\n".join(f" - {p}" for p in tried)
-    raise SystemExit(msg)
+    if latency_raw is None and frames_raw is None and legacy_raw is not None:
+        # mantém latência do mapa antigo
+        ppa_map_latency = _to_int_map(legacy_raw, "tick_write.ppa_map")
 
+        # frames: por padrão exige que você defina explicitamente,
+        # mas para não quebrar execução, criamos um placeholder igual ao latency.
+        # Melhor: você trocar no YAML para um mapa real de frames.
+        ppa_map_frames = dict(ppa_map_latency)
 
-def _load_file_config(path: str) -> dict[str, Any]:
-    ext = os.path.splitext(path)[1].lower()
-    with open(path, "r", encoding="utf-8") as f:
-        if ext in (".yaml", ".yml"):
-            data = yaml.safe_load(f) or {}
-        elif ext == ".json":
-            data = json.load(f) or {}
-        else:
-            raise SystemExit("Config file deve ser .yaml/.yml ou .json")
-    if not isinstance(data, dict):
-        raise SystemExit("Config inválida: raiz deve ser um objeto.")
-    return data
+    else:
+        if latency_raw is None:
+            raise ValueError("Config inválida: campo obrigatório 'tick_write.ppa_map_latency' ausente.")
+        if frames_raw is None:
+            raise ValueError("Config inválida: campo obrigatório 'tick_write.ppa_map_frames' ausente.")
 
+        ppa_map_latency = _to_int_map(latency_raw, "tick_write.ppa_map_latency")
+        ppa_map_frames = _to_int_map(frames_raw, "tick_write.ppa_map_frames")
 
-def load_config() -> AppConfig:
-    cfg_path = _find_config_path()
-    cfg = _load_file_config(cfg_path)
-
-    # ---- base ----
-    hostname = _require(cfg, "hostname", "root")
-    port = int(_require(cfg, "port", "root"))
-    window_sec = float(_require(cfg, "window_sec", "root"))
-    top_n = int(_require(cfg, "top_n", "root"))
-    shards = int(_require(cfg, "shards", "root"))
-    queue_size = int(_require(cfg, "queue_size", "root"))
-
-    # ---- tick_write ----
-    tw = _require(cfg, "tick_write", "root")
-    if not isinstance(tw, dict):
-        raise SystemExit("tick_write deve ser um objeto.")
-
-    tick_url = _require(tw, "url", "tick_write")
-    tick_server_ip = _require(tw, "server_ip", "tick_write")
-    tick_workers = int(_require(tw, "workers", "tick_write"))
-    tick_queue_max = int(_require(tw, "queue_max", "tick_write"))
-    tick_timeout = float(_require(tw, "timeout_sec", "tick_write"))
-    tick_retries = int(_require(tw, "max_retries", "tick_write"))
-    tick_drop = bool(_require(tw, "drop_on_full", "tick_write"))
-    tick_ppa_map = _coerce_ppa_map(_require(tw, "ppa_map", "tick_write"))
-
-    subscription = _build_subscription_from_map(tick_ppa_map)
+    tick_write = TickWriteConfig(
+        url=str(url),
+        server_ip=str(server_ip),
+        workers=workers,
+        queue_max=queue_max,
+        timeout_sec=timeout_sec,
+        max_retries=max_retries,
+        drop_on_full=drop_on_full,
+        ppa_map_latency=ppa_map_latency,
+        ppa_map_frames=ppa_map_frames,
+    )
 
     return AppConfig(
-        hostname=hostname,
+        hostname=str(hostname),
         port=port,
-        subscription=subscription,
         window_sec=window_sec,
+        top_n=top_n,
         shards=shards,
         queue_size=queue_size,
-        top_n=top_n,
-        tick_write=TickWriteConfig(
-            url=tick_url,
-            server_ip=tick_server_ip,
-            ppa_map=tick_ppa_map,
-            workers=tick_workers,
-            queue_max=tick_queue_max,
-            timeout_sec=tick_timeout,
-            max_retries=tick_retries,
-            drop_on_full=tick_drop,
-        ),
+        subscription=subscription,
+        tick_write=tick_write,
     )

@@ -1,7 +1,7 @@
 hostname: localhost
 port: 7165
 
-window_sec: 1.0
+window_sec: 10
 top_n: 10
 shards: 8
 queue_size: 100000
@@ -16,6 +16,12 @@ tick_write:
   max_retries: 3
   drop_on_full: false
 
-  ppa_map:
-    111: 2397
-    886: 2398
+# 1 PPA de entrada -> 2 PPAs de saída (latência média e frames por janela)
+  ppa_map_latency:
+    477: 2397
+    2423: 2401
+
+  ppa_map_frames:
+    477: 2399
+    2423: 2400
+

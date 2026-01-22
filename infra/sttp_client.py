@@ -10,6 +10,8 @@ from domain.models import LatencyEvent
 from domain.ports import Clock, KeyExtractor
 from app.pipeline import LatencyPipeline
 
+from datetime import datetime
+
 class SttpLatencySubscriber(Subscriber):
     def __init__(self, pipeline: LatencyPipeline, clock: Clock, key_extractor: KeyExtractor):
         super().__init__()
@@ -32,6 +34,8 @@ class SttpLatencySubscriber(Subscriber):
         if not self._started:
             self._started = True
             self.statusmessage("Receiving measurements...")
+
+        # print(datetime.now(),measurements)
 
         self.pipeline.on_batch_received(batch_size=len(measurements))
 

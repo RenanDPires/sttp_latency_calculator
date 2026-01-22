@@ -79,6 +79,10 @@ class HttpTickSink(TickSink):
         else:
             self._q.put(job)
 
+        from dataclasses import asdict
+        print("[HttpTickSink] payload:", asdict(job))
+
+
     def _worker(self, wid: int) -> None:
         assert self._client is not None
 

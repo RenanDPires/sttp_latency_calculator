@@ -1,6 +1,7 @@
 from gsf import Limits
 
 import logging
+import re
 
 from config import load_config
 from app.processor import ShardedWindowProcessor
@@ -19,6 +20,36 @@ def main():
     if cfg.port < 1 or cfg.port > Limits.MAXUINT16:
         raise SystemExit(f"Port out of range: {cfg.port}")
 
+    # ---- validação dos maps (latência vs frames devem ter as mesmas chaves) ----
+    k_lat = set(cfg.tick_write.ppa_map_latency.keys())
+    k_frm = set(cfg.tick_write.ppa_map_frames.keys())
+    if k_lat != k_frm:
+        raise SystemExit(
+            "Config inválida: chaves diferentes em ppa_map_latency vs ppa_map_frames. "
+            f"lat_only={sorted(k_lat - k_frm)} frames_only={sorted(k_frm - k_lat)}"
+        )
+
+    # ---- subscription: se não vier no YAML, gera a partir dos PPAs de entrada ----
+    subscription = (cfg.subscription or "").strip()
+    if not subscription:
+        keys = sorted(int(k) for k in cfg.tick_write.ppa_map_latency.keys())
+        subscription = "; ".join(f"PPA:{k}" for k in keys)
+
+    print("subscription repr:", repr(subscription))
+    ppas = [
+        int(x)
+        for x in re.findall(r"\bPPA\s*:\s*(\d+)\b", subscription, flags=re.IGNORECASE)
+    ]
+    print("PPAs solicitados na subscription:", ppas)
+
+    # (opcional, mas útil) mostrar claramente o roteamento IN -> OUTs
+    for k in sorted(cfg.tick_write.ppa_map_latency.keys()):
+        k = int(k)
+        print(
+            f"PPA_IN {k} -> latency_out {cfg.tick_write.ppa_map_latency[k]} "
+            f"| frames_out {cfg.tick_write.ppa_map_frames[k]}"
+        )
+
     processor = ShardedWindowProcessor(shards=cfg.shards, queue_size=cfg.queue_size)
     processor.start()
 
@@ -26,7 +57,6 @@ def main():
     sink = PrintSink()
     policy = WindowPolicy(window_sec=cfg.window_sec, top_n=cfg.top_n)
 
-    
     tick_sink = HttpTickSink(
         cfg.tick_write.url,
         workers=cfg.tick_write.workers,
@@ -37,7 +67,10 @@ def main():
     )
     tick_sink.start()
 
-    ppa_mapper = DictPpaMapper(cfg.tick_write.ppa_map)
+    ppa_mapper = DictPpaMapper(
+        cfg.tick_write.ppa_map_latency,
+        cfg.tick_write.ppa_map_frames,
+    )
 
     pipeline = LatencyPipeline(
         processor=processor,
@@ -57,7 +90,7 @@ def main():
     sub.settings.use_millisecondresolution = True
 
     try:
-        sub.subscribe(cfg.subscription, sub.settings)
+        sub.subscribe(subscription, sub.settings)
         sub.connect(f"{cfg.hostname}:{cfg.port}", sub.config)
         print("Connected. Press ENTER to stop...")
         input()

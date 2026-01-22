@@ -34,7 +34,12 @@ class WriteJob:
 class TickSink(Protocol):
     def publish(self, job: WriteJob) -> None: ...
 
+
+@dataclass(frozen=True)
+class PpaDestinations:
+    latency_ppa: int
+    frames_ppa: int
+
 class PpaMapper(Protocol):
-    def try_map(self, ppa_src: int) -> Optional[int]:
-        """Mapeia src (cálculo) -> dst (salvamento). None = não publica."""
+    def try_map(self, ppa_in: int) -> Optional[PpaDestinations]:
         ...
