@@ -1,2 +1,2 @@
-pyinstaller --onefile --name sttp_violator main.py
+pyinstaller --onefile --name sttp_listener main.py
 Copy-Item .\config.yaml .\dist\config.yaml -Force
