@@ -68,10 +68,16 @@ class LatencyPipeline:
         if not self._started:
             self._started = True
 
-            now = self.clock.now_epoch()
-            # início da janela no próximo segundo cheio (.00)
-            self._start_epoch = math.floor(now) + 1.0
-            self._next_flush = self._start_epoch + float(self.policy.window_sec)
+            now = float(self.clock.now_epoch())
+            w = float(self.policy.window_sec)
+
+            # próximo múltiplo de w (ex.: 10s) estritamente no futuro
+            next_boundary = (math.floor(now / w) + 1.0) * w
+
+            # janela vigente: [start, end)
+            self._next_flush = next_boundary
+            self._start_epoch = self._next_flush - w
+
 
         self._last_batch_size = batch_size
 

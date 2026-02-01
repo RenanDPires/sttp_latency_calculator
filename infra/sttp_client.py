@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List, Optional, Set
+
 from sttp.subscriber import Subscriber
 from sttp.config import Config
 from sttp.settings import Settings
 from sttp.transport.measurement import Measurement
 from sttp.transport.signalindexcache import SignalIndexCache
-from typing import List, Optional, Set
 
 from domain.models import LatencyEvent
 from domain.ports import Clock, KeyExtractor, ViolationSink
@@ -24,6 +24,10 @@ class SttpLatencySubscriber(Subscriber):
         stats_keys: Optional[Set[int]] = None,
         threshold_monitor: Optional[ThresholdMonitor] = None,
         violation_sink: Optional[ViolationSink] = None,
+        # -----------------------------
+        # Alinhamento
+        # -----------------------------
+        align_window_sec: int = 10,
     ):
         super().__init__()
         self.config = Config()
@@ -43,13 +47,20 @@ class SttpLatencySubscriber(Subscriber):
         self._started = False
 
         # -----------------------------
+        # Align gate (descarta até o próximo X0)
+        # -----------------------------
+        self._aligned: bool = False
+        self._align_window_sec: int = int(align_window_sec)
+        self._align_target_epoch: Optional[float] = None  # epoch inteiro do X0 alvo
+        self._dropped_before_align: int = 0
+
+        # -----------------------------
         # Dedupe (drop de frames repetidos)
         # -----------------------------
         self._dedupe_ttl_s: float = 5.0  # janela de dedupe entre batches
         self._dedupe_seen: Dict[Tuple[int, float], float] = {}  # (ppa, t_meas_epoch) -> last_seen_arrival_epoch
         self._dedupe_cleanup_every: int = 2000
         self._dedupe_i: int = 0
-
 
         self.set_subscriptionupdated_receiver(self.subscription_updated)
         self.set_newmeasurements_receiver(self.new_measurements)
@@ -58,10 +69,51 @@ class SttpLatencySubscriber(Subscriber):
     def subscription_updated(self, signalindexcache: SignalIndexCache):
         self.statusmessage(f"Received signal index cache with {signalindexcache.count:,} mappings")
 
+    # -----------------------------
+    # Align helpers
+    # -----------------------------
+    def _compute_next_boundary_epoch(self, now_epoch: float) -> int:
+        """
+        Retorna o próximo múltiplo de self._align_window_sec (ex.: 10s),
+        sempre como epoch inteiro (sem fração).
+        """
+        w = int(self._align_window_sec)
+        return (int(now_epoch) // w + 1) * w
+
     def new_measurements(self, measurements: List[Measurement]):
         if not self._started:
             self._started = True
             self.statusmessage("Receiving measurements...")
+
+        # ============================
+        # ALIGN GATE: descarta até o próximo X0
+        # ============================
+        if not self._aligned:
+            now_epoch = float(self.clock.now_epoch())
+
+            if self._align_target_epoch is None:
+                self._align_target_epoch = float(self._compute_next_boundary_epoch(now_epoch))
+                self.statusmessage(
+                    f"[align] gating enabled. dropping until epoch={self._align_target_epoch:.0f} "
+                    f"(window={self._align_window_sec}s)"
+                )
+
+            if now_epoch < float(self._align_target_epoch):
+                self._dropped_before_align += len(measurements)
+
+                # log "suave" (evita spam): a cada ~5000 descartados, em média
+                if (self._dropped_before_align % 5000) < len(measurements):
+                    self.statusmessage(
+                        f"[align] dropped_before_align={self._dropped_before_align} "
+                        f"now={now_epoch:.3f} target={self._align_target_epoch:.0f}"
+                    )
+                return
+
+            self._aligned = True
+            self.statusmessage(
+                f"[align] released at now_epoch={now_epoch:.3f} target={self._align_target_epoch:.0f} "
+                f"dropped={self._dropped_before_align}"
+            )
 
         arrival_epoch = self.clock.now_epoch()
 
@@ -136,12 +188,17 @@ class SttpLatencySubscriber(Subscriber):
         self.pipeline.on_batch_received(batch_size=processed)
 
         if dropped_dupes:
-            self.statusmessage(f"[warn] dropped duplicated frames: {dropped_dupes} / {len(measurements)} (processed={processed})")
+            self.statusmessage(
+                f"[warn] dropped duplicated frames: {dropped_dupes} / {len(measurements)} (processed={processed})"
+            )
 
         self.pipeline.maybe_flush()
-
-
 
     def connection_terminated(self):
         self.default_connectionterminated_receiver()
         self._started = False
+
+        # reset do alinhamento ao reconectar
+        self._aligned = False
+        self._align_target_epoch = None
+        self._dropped_before_align = 0
