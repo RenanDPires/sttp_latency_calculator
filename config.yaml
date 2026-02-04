@@ -33,7 +33,7 @@ tick_write:
 
 
 threshold_monitor:
-  enabled: false
+  enabled: true
   csv_path: "violations.csv"
   flush_every_n: 200
   flush_every_sec: 2.0
