@@ -55,8 +55,6 @@ class AppConfig:
     audit_window_dir: str = "violations_windows"
     audit_on_negative_latency: bool = True
     audit_log_raw_on_negative: bool = False
-    audit_raw_debug_enabled: bool = False
-    audit_raw_debug_csv_path: str = "raw_measurements.csv"
 
     tick_write: TickWriteConfig = None  # type: ignore
     threshold_monitor: ThresholdMonitorConfig | None = None
@@ -237,8 +235,6 @@ def load_config(path: str = "config.yaml") -> AppConfig:
     audit_window_dir = str(_opt(audit_raw, "window_dir", "violations_windows"))
     audit_on_negative_latency = bool(_opt(audit_raw, "on_negative_latency", True))
     audit_log_raw_on_negative = bool(_opt(audit_raw, "log_raw_on_negative", False))
-    audit_raw_debug_enabled = bool(_opt(audit_raw, "raw_debug_enabled", False))
-    audit_raw_debug_csv_path = str(_opt(audit_raw, "raw_debug_csv_path", "raw_measurements.csv"))
 
     return AppConfig(
         hostname=str(hostname),
@@ -252,8 +248,6 @@ def load_config(path: str = "config.yaml") -> AppConfig:
         audit_window_dir=audit_window_dir,
         audit_on_negative_latency=audit_on_negative_latency,
         audit_log_raw_on_negative=audit_log_raw_on_negative,
-        audit_raw_debug_enabled=audit_raw_debug_enabled,
-        audit_raw_debug_csv_path=audit_raw_debug_csv_path,
         tick_write=tick_write,
         threshold_monitor=threshold_monitor,
     )

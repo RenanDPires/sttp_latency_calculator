@@ -19,7 +19,6 @@ from core import (
     ViolationSink,
     WindowAuditSink,
 )
-from infra.raw_measurement_csv_sink import AsyncCsvRawMeasurementWriter, build_raw_measurement_record
 
 
 class SttpLatencySubscriber(Subscriber):
@@ -35,7 +34,6 @@ class SttpLatencySubscriber(Subscriber):
         window_audit_sink: Optional[WindowAuditSink] = None,
         audit_on_negative_latency: bool = True,
         log_raw_on_negative: bool = False,
-        raw_measurement_sink: Optional[AsyncCsvRawMeasurementWriter] = None,
         # -----------------------------
         # Alinhamento
         # -----------------------------
@@ -60,7 +58,6 @@ class SttpLatencySubscriber(Subscriber):
         self.window_audit_sink = window_audit_sink
         self.audit_on_negative_latency = audit_on_negative_latency
         self.log_raw_on_negative = log_raw_on_negative
-        self.raw_measurement_sink = raw_measurement_sink
         self._audit_window_sec = int(align_window_sec)
         self._audit_window_start: Optional[float] = None
         self._audit_events: List[LatencyAuditEvent] = []
