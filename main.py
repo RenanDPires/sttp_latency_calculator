@@ -3,8 +3,7 @@ from gsf import Limits
 import re
 
 from config import load_config
-from app.processor import ShardedWindowProcessor
-from app.pipeline import LatencyPipeline, WindowPolicy
+from core import LatencyPipeline, ShardedWindowProcessor, WindowPolicy
 from infra.clock import SystemClock
 from infra.sinks import PrintSink
 from infra.key_extractors import PpaKeyExtractor
@@ -13,8 +12,10 @@ from infra.sttp_client import SttpLatencySubscriber
 from infra.http_tick_sink import HttpTickSink
 from infra.ppa_mapper import DictPpaMapper
 
-from app.threshold_monitor import ThresholdMonitor, ThresholdMonitorConfig
+from core import ThresholdMonitor, ThresholdMonitorConfig
 from infra.violations_csv_sink import AsyncCsvViolationWriter
+from infra.window_audit_csv_sink import WindowCsvAuditWriter
+from infra.raw_measurement_csv_sink import AsyncCsvRawMeasurementWriter
 
 
 def _extract_ppas_from_subscription(text: str) -> list[int]:
@@ -78,6 +79,8 @@ def main():
     # ---- prepara monitor de violações (opcional) ----
     threshold_monitor = None
     violation_writer = None
+    window_audit_writer = None
+    raw_measurement_writer = None
     monitor_keys: set[int] = set()
 
     if cfg.threshold_monitor and cfg.threshold_monitor.enabled:
@@ -101,6 +104,19 @@ def main():
         print(f"[violations] enabled=True csv={cfg.threshold_monitor.csv_path} rules_ppas={sorted(monitor_keys)}")
     else:
         print("[violations] enabled=False")
+
+    if cfg.audit_enabled:
+        window_audit_writer = WindowCsvAuditWriter(
+            cfg.audit_window_dir,
+        )
+    else:
+        print("[audit] enabled=False")
+
+    if cfg.audit_raw_debug_enabled:
+        raw_measurement_writer = AsyncCsvRawMeasurementWriter(
+            cfg.audit_raw_debug_csv_path,
+        )
+        raw_measurement_writer.start()
 
     # stats: apenas quando tick_write existe
     stats_keys: set[int] = set()
@@ -187,6 +203,11 @@ def main():
         stats_keys=stats_keys,
         threshold_monitor=threshold_monitor,
         violation_sink=violation_writer,
+        window_audit_sink=window_audit_writer,
+        audit_on_negative_latency=cfg.audit_on_negative_latency,
+        log_raw_on_negative=cfg.audit_log_raw_on_negative,
+        raw_measurement_sink=raw_measurement_writer,
+        align_window_sec=cfg.window_sec,
     )
 
     sub.config.compress_payloaddata = False
@@ -210,7 +231,12 @@ def main():
                     if violation_writer is not None:
                         violation_writer.stop()
                 finally:
-                    sub.dispose()
+                    try:
+                        if raw_measurement_writer is not None:
+                            raw_measurement_writer.stop()
+                    finally:
+                        sub.flush_audit_window()
+                        sub.dispose()
 
 
 if __name__ == "__main__":

@@ -4,7 +4,7 @@ Ferramenta em Python para **cálculo de latência de dados STTP (C37.118)**, com
 - processamento concorrente por janelas temporais,
 - estatísticas agregadas por PPA,
 - publicação opcional **tick-a-tick** via HTTP,
-- arquitetura limpa (domain / app / infra),
+- arquitetura enxuta (core.py / infra),
 - suporte a execução como **script Python** ou **executável (PyInstaller)**.
 
 ---
@@ -37,8 +37,8 @@ STTP Server
 ↓
 SttpLatencySubscriber (infra)
 ↓
-LatencyPipeline (app)
-├─ ShardedWindowProcessor (app)
+LatencyPipeline (core.py)
+├─ ShardedWindowProcessor (core.py)
 ├─ ReportSink (infra)
 └─ TickSink (HTTP) (infra)
 
@@ -49,12 +49,11 @@ Copiar código
 
 | Camada  | Responsabilidade |
 |-------|------------------|
-| `domain/` | Regras de negócio puras, modelos, contratos |
-| `app/` | Orquestração, pipeline e concorrência |
+| `core.py` | Regras de negócio, modelos, pipeline e concorrência |
 | `infra/` | STTP, HTTP, relógio, sinks, mapeamentos |
 | `main.py` | Composition Root (injeção de dependências) |
 
-> O domínio **não depende** de STTP, HTTP ou threads.
+> O núcleo (**core.py**) **não depende** de STTP, HTTP ou threads.
 
 ---
 

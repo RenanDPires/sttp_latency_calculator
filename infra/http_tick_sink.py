@@ -8,7 +8,7 @@ from typing import Optional
 
 import httpx
 
-from domain.ports import TickSink, WriteJob
+from core import TickSink, WriteJob
 
 
 class HttpTickSink(TickSink):
