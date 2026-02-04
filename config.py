@@ -29,7 +29,7 @@ class ThresholdMonitorConfig:
     enabled: bool = False
 
     csv_path: str = "violations.csv"
-    audit_csv_path: str = "violations_audit.csv"
+    audit_window_dir: str = "violations_windows"
     queue_max: int = 20000
     drop_on_full: bool = True
     flush_every_n: int = 200
@@ -206,7 +206,7 @@ def load_config(path: str = "config.yaml") -> AppConfig:
     if isinstance(tm_raw, Mapping):
         enabled = bool(_opt(tm_raw, "enabled", False))
         csv_path = str(_opt(tm_raw, "csv_path", "violations.csv"))
-        audit_csv_path = str(_opt(tm_raw, "audit_csv_path", "violations_audit.csv"))
+        audit_window_dir = str(_opt(tm_raw, "audit_window_dir", "violations_windows"))
         tm_queue_max = int(_opt(tm_raw, "queue_max", 20000))
         tm_drop = bool(_opt(tm_raw, "drop_on_full", True))
         flush_n = int(_opt(tm_raw, "flush_every_n", 200))
@@ -220,7 +220,7 @@ def load_config(path: str = "config.yaml") -> AppConfig:
         threshold_monitor = ThresholdMonitorConfig(
             enabled=enabled,
             csv_path=csv_path,
-            audit_csv_path=audit_csv_path,
+            audit_window_dir=audit_window_dir,
             queue_max=tm_queue_max,
             drop_on_full=tm_drop,
             flush_every_n=flush_n,

@@ -177,6 +177,16 @@ class LatencyAuditSink(Protocol):
     def publish(self, ev: LatencyAuditEvent) -> None: ...
 
 
+class WindowAuditSink(Protocol):
+    def write_window(
+        self,
+        window_start_epoch: float,
+        window_end_epoch: float,
+        events: List[LatencyAuditEvent],
+    ) -> None:
+        ...
+
+
 class ShardedWindowProcessor:
     def __init__(self, shards: int, queue_size: int):
         self.shards = shards
