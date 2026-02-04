@@ -99,13 +99,16 @@ def main():
         )
         violation_writer.start()
 
-        window_audit_writer = WindowCsvAuditWriter(
-            cfg.threshold_monitor.audit_window_dir,
-        )
-
         print(f"[violations] enabled=True csv={cfg.threshold_monitor.csv_path} rules_ppas={sorted(monitor_keys)}")
     else:
         print("[violations] enabled=False")
+
+    if cfg.audit_enabled:
+        window_audit_writer = WindowCsvAuditWriter(
+            cfg.audit_window_dir,
+        )
+    else:
+        print("[audit] enabled=False")
 
     # stats: apenas quando tick_write existe
     stats_keys: set[int] = set()
@@ -193,7 +196,7 @@ def main():
         threshold_monitor=threshold_monitor,
         violation_sink=violation_writer,
         window_audit_sink=window_audit_writer,
-        audit_on_negative_latency=cfg.threshold_monitor.audit_on_negative_latency if cfg.threshold_monitor else True,
+        audit_on_negative_latency=cfg.audit_on_negative_latency,
         align_window_sec=cfg.window_sec,
     )
 
