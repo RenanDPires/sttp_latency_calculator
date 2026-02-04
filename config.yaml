@@ -6,6 +6,14 @@ top_n: 10
 shards: 8
 queue_size: 100000
 
+latency_audit:
+  enabled: true
+  window_dir: "violations_windows"
+  on_negative_latency: true
+  log_raw_on_negative: false
+  raw_debug_enabled: false
+  raw_debug_csv_path: "logs/raw_measurements.csv"
+
 tick_write:
   enabled: false
   url: "http://localhost:8010/write"
