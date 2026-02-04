@@ -242,6 +242,7 @@ class SttpLatencySubscriber(Subscriber):
             )
 
         self.pipeline.maybe_flush()
+        self._maybe_flush_audit_by_time(self.clock.now_epoch())
 
     def connection_terminated(self):
         self.default_connectionterminated_receiver()
@@ -261,6 +262,16 @@ class SttpLatencySubscriber(Subscriber):
         self._audit_window_start = None
         self._audit_events = []
         self._audit_has_negative = False
+
+    def _maybe_flush_audit_by_time(self, now_epoch: float) -> None:
+        if self._audit_window_start is None:
+            return
+        window_end = float(self._audit_window_start) + float(self._audit_window_sec)
+        if now_epoch >= window_end:
+            self._flush_audit_window()
+            self._audit_window_start = float(
+                (int(now_epoch) // self._audit_window_sec) * self._audit_window_sec
+            )
 
     def _flush_audit_window(self) -> None:
         if self.window_audit_sink is None or self._audit_window_start is None:
