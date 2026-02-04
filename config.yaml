@@ -6,8 +6,13 @@ top_n: 10
 shards: 8
 queue_size: 100000
 
+latency_audit:
+  enabled: true
+  window_dir: "violations_windows"
+  on_negative_latency: true
+
 tick_write:
-  enabled: false
+  enabled: true
   url: "http://localhost:8010/write"
   server_ip: "localhost"
 
@@ -28,7 +33,7 @@ tick_write:
 
 
 threshold_monitor:
-  enabled: true
+  enabled: false
   csv_path: "violations.csv"
   flush_every_n: 200
   flush_every_sec: 2.0

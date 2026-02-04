@@ -8,10 +8,17 @@ from sttp.settings import Settings
 from sttp.transport.measurement import Measurement
 from sttp.transport.signalindexcache import SignalIndexCache
 
-from domain.models import LatencyEvent
-from domain.ports import Clock, KeyExtractor, ViolationSink
-from app.pipeline import LatencyPipeline
-from app.threshold_monitor import ThresholdMonitor
+from core import (
+    Clock,
+    KeyExtractor,
+    LatencyAuditEvent,
+    LatencyEvent,
+    LatencyPipeline,
+    ThresholdMonitor,
+    ViolationEvent,
+    ViolationSink,
+    WindowAuditSink,
+)
 
 
 class SttpLatencySubscriber(Subscriber):
@@ -24,6 +31,8 @@ class SttpLatencySubscriber(Subscriber):
         stats_keys: Optional[Set[int]] = None,
         threshold_monitor: Optional[ThresholdMonitor] = None,
         violation_sink: Optional[ViolationSink] = None,
+        window_audit_sink: Optional[WindowAuditSink] = None,
+        audit_on_negative_latency: bool = True,
         # -----------------------------
         # Alinhamento
         # -----------------------------
@@ -43,6 +52,14 @@ class SttpLatencySubscriber(Subscriber):
         # Monitor de violações (medidas) - independente do pipeline
         self.threshold_monitor = threshold_monitor
         self.violation_sink = violation_sink
+
+        # Auditoria de latência (persistência por janela)
+        self.window_audit_sink = window_audit_sink
+        self.audit_on_negative_latency = audit_on_negative_latency
+        self._audit_window_sec = int(align_window_sec)
+        self._audit_window_start: Optional[float] = None
+        self._audit_events: List[LatencyAuditEvent] = []
+        self._audit_has_negative = False
 
         self._started = False
 
@@ -128,6 +145,14 @@ class SttpLatencySubscriber(Subscriber):
             key = int(self.key_extractor.key_from(m, md))
 
             t_meas_epoch = float(m.datetime.timestamp())
+            latency = (arrival_epoch - t_meas_epoch) * 1000.0
+            window_start = (int(arrival_epoch) // self._audit_window_sec) * self._audit_window_sec
+
+            if self._audit_window_start is None:
+                self._audit_window_start = float(window_start)
+            elif window_start != int(self._audit_window_start):
+                self._flush_audit_window()
+                self._audit_window_start = float(window_start)
 
             # ============================
             # DEDUPE GATE (batch + TTL)
@@ -161,6 +186,30 @@ class SttpLatencySubscriber(Subscriber):
 
             value = float(m.value)
 
+            self._audit_events.append(
+                LatencyAuditEvent(
+                    t_arrival_epoch=arrival_epoch,
+                    t_meas_epoch=t_meas_epoch,
+                    ppa=key,
+                    value=value,
+                    latency_ms=latency,
+                    flags=int(m.flags),
+                )
+            )
+            if latency < 0:
+                self._audit_has_negative = True
+
+            if latency < 0 and self.violation_sink is not None:
+                self.violation_sink.publish(
+                    ViolationEvent(
+                        t_epoch=arrival_epoch,
+                        ppa=int(key),
+                        value=float(latency),
+                        rule_id="LATENCY_LT_0",
+                        rule="< 0 ms",
+                    )
+                )
+
             # (1) Violações (não entra se for repetido)
             if self.threshold_monitor is not None and self.violation_sink is not None:
                 violations = self.threshold_monitor.check(
@@ -193,6 +242,7 @@ class SttpLatencySubscriber(Subscriber):
             )
 
         self.pipeline.maybe_flush()
+        self._maybe_flush_audit_by_time(self.clock.now_epoch())
 
     def connection_terminated(self):
         self.default_connectionterminated_receiver()
@@ -202,3 +252,38 @@ class SttpLatencySubscriber(Subscriber):
         self._aligned = False
         self._align_target_epoch = None
         self._dropped_before_align = 0
+        self._flush_audit_window()
+        self._audit_window_start = None
+        self._audit_events = []
+        self._audit_has_negative = False
+
+    def flush_audit_window(self) -> None:
+        self._flush_audit_window()
+        self._audit_window_start = None
+        self._audit_events = []
+        self._audit_has_negative = False
+
+    def _maybe_flush_audit_by_time(self, now_epoch: float) -> None:
+        if self._audit_window_start is None:
+            return
+        window_end = float(self._audit_window_start) + float(self._audit_window_sec)
+        if now_epoch >= window_end:
+            self._flush_audit_window()
+            self._audit_window_start = float(
+                (int(now_epoch) // self._audit_window_sec) * self._audit_window_sec
+            )
+
+    def _flush_audit_window(self) -> None:
+        if self.window_audit_sink is None or self._audit_window_start is None:
+            self._audit_events = []
+            self._audit_has_negative = False
+            return
+
+        should_write = (not self.audit_on_negative_latency) or self._audit_has_negative
+        if should_write and self._audit_events:
+            window_start = float(self._audit_window_start)
+            window_end = window_start + float(self._audit_window_sec)
+            self.window_audit_sink.write_window(window_start, window_end, list(self._audit_events))
+
+        self._audit_events = []
+        self._audit_has_negative = False

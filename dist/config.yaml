@@ -7,7 +7,7 @@ shards: 8
 queue_size: 100000
 
 tick_write:
-  enabled: false
+  enabled: true
   url: "http://localhost:8010/write"
   server_ip: "localhost"
 
@@ -30,6 +30,8 @@ tick_write:
 threshold_monitor:
   enabled: true
   csv_path: "violations.csv"
+  audit_csv_path: "violations_audit.csv"
+  audit_on_negative_latency: true
   flush_every_n: 200
   flush_every_sec: 2.0
   queue_max: 20000

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from domain.ports import KeyExtractor
+from core import KeyExtractor
 from sttp.transport.measurement import Measurement
 
 class PpaKeyExtractor(KeyExtractor):
@@ -10,5 +10,3 @@ class PpaKeyExtractor(KeyExtractor):
         except Exception:
             s = str(metadata.id)
             return int("".join(ch for ch in s if ch.isdigit()) or "0")
-
-
