@@ -30,7 +30,7 @@ tick_write:
 threshold_monitor:
   enabled: true
   csv_path: "violations.csv"
-  audit_csv_path: "violations_audit.csv"
+  audit_window_dir: "violations_windows"
   audit_on_negative_latency: true
   flush_every_n: 200
   flush_every_sec: 2.0

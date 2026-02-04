@@ -14,7 +14,7 @@ from infra.ppa_mapper import DictPpaMapper
 
 from core import ThresholdMonitor, ThresholdMonitorConfig
 from infra.violations_csv_sink import AsyncCsvViolationWriter
-from infra.analysis_csv_sink import AsyncCsvLatencyAuditWriter
+from infra.window_audit_csv_sink import WindowCsvAuditWriter
 
 
 def _extract_ppas_from_subscription(text: str) -> list[int]:
@@ -78,7 +78,7 @@ def main():
     # ---- prepara monitor de violações (opcional) ----
     threshold_monitor = None
     violation_writer = None
-    audit_writer = None
+    window_audit_writer = None
     monitor_keys: set[int] = set()
 
     if cfg.threshold_monitor and cfg.threshold_monitor.enabled:
@@ -99,14 +99,9 @@ def main():
         )
         violation_writer.start()
 
-        audit_writer = AsyncCsvLatencyAuditWriter(
-            cfg.threshold_monitor.audit_csv_path,
-            queue_max=cfg.threshold_monitor.queue_max,
-            drop_on_full=cfg.threshold_monitor.drop_on_full,
-            flush_every_n=cfg.threshold_monitor.flush_every_n,
-            flush_every_sec=cfg.threshold_monitor.flush_every_sec,
+        window_audit_writer = WindowCsvAuditWriter(
+            cfg.threshold_monitor.audit_window_dir,
         )
-        audit_writer.start()
 
         print(f"[violations] enabled=True csv={cfg.threshold_monitor.csv_path} rules_ppas={sorted(monitor_keys)}")
     else:
@@ -197,9 +192,9 @@ def main():
         stats_keys=stats_keys,
         threshold_monitor=threshold_monitor,
         violation_sink=violation_writer,
-        analysis_sink=audit_writer,
-        audit_keys=monitor_keys,
+        window_audit_sink=window_audit_writer,
         audit_on_negative_latency=cfg.threshold_monitor.audit_on_negative_latency if cfg.threshold_monitor else True,
+        align_window_sec=cfg.window_sec,
     )
 
     sub.config.compress_payloaddata = False
@@ -223,11 +218,8 @@ def main():
                     if violation_writer is not None:
                         violation_writer.stop()
                 finally:
-                    try:
-                        if audit_writer is not None:
-                            audit_writer.stop()
-                    finally:
-                        sub.dispose()
+                    sub.flush_audit_window()
+                    sub.dispose()
 
 
 if __name__ == "__main__":
