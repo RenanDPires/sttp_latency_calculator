@@ -6,7 +6,7 @@ from typing import Any, Mapping
 
 import yaml
 
-from domain.thresholds import ThresholdRule
+from core import ThresholdRule
 
 
 @dataclass(frozen=True)
@@ -50,6 +50,11 @@ class AppConfig:
     queue_size: int = 100000
 
     subscription: str = ""
+
+    audit_enabled: bool = True
+    audit_window_dir: str = "violations_windows"
+    audit_on_negative_latency: bool = True
+    audit_log_raw_on_negative: bool = False
 
     tick_write: TickWriteConfig = None  # type: ignore
     threshold_monitor: ThresholdMonitorConfig | None = None
@@ -224,6 +229,13 @@ def load_config(path: str = "config.yaml") -> AppConfig:
             rules=rules,
         )
 
+    # ---- latency_audit (opcional, independente de threshold) ----
+    audit_raw = _opt(data, "latency_audit", None)
+    audit_enabled = bool(_opt(audit_raw, "enabled", True))
+    audit_window_dir = str(_opt(audit_raw, "window_dir", "violations_windows"))
+    audit_on_negative_latency = bool(_opt(audit_raw, "on_negative_latency", True))
+    audit_log_raw_on_negative = bool(_opt(audit_raw, "log_raw_on_negative", False))
+
     return AppConfig(
         hostname=str(hostname),
         port=port,
@@ -232,6 +244,10 @@ def load_config(path: str = "config.yaml") -> AppConfig:
         shards=shards,
         queue_size=queue_size,
         subscription=subscription,
+        audit_enabled=audit_enabled,
+        audit_window_dir=audit_window_dir,
+        audit_on_negative_latency=audit_on_negative_latency,
+        audit_log_raw_on_negative=audit_log_raw_on_negative,
         tick_write=tick_write,
         threshold_monitor=threshold_monitor,
     )

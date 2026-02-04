@@ -1,7 +1,6 @@
 from __future__ import annotations
 from datetime import datetime, timezone
-from domain.ports import ReportSink
-from domain.models import WindowReport
+from core import ReportSink, WindowReport
 
 class PrintSink(ReportSink):
     def handle(self, report: WindowReport) -> None:

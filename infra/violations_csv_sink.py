@@ -8,7 +8,7 @@ from queue import Queue, Full, Empty
 from datetime import datetime, timezone
 from typing import List
 
-from domain.violations import ViolationEvent
+from core import ViolationEvent
 
 
 class AsyncCsvViolationWriter:
