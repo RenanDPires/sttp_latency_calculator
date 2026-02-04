@@ -6,7 +6,7 @@ from typing import Any, Mapping
 
 import yaml
 
-from domain.thresholds import ThresholdRule
+from core import ThresholdRule
 
 
 @dataclass(frozen=True)
@@ -29,11 +29,13 @@ class ThresholdMonitorConfig:
     enabled: bool = False
 
     csv_path: str = "violations.csv"
+    audit_csv_path: str = "violations_audit.csv"
     queue_max: int = 20000
     drop_on_full: bool = True
     flush_every_n: int = 200
     flush_every_sec: float = 2.0
     cooldown_sec: float = 0.0
+    audit_on_negative_latency: bool = True
 
     # dict[ppa_in] -> list[ThresholdRule]
     rules: dict[int, list[ThresholdRule]] = None  # type: ignore
@@ -204,11 +206,13 @@ def load_config(path: str = "config.yaml") -> AppConfig:
     if isinstance(tm_raw, Mapping):
         enabled = bool(_opt(tm_raw, "enabled", False))
         csv_path = str(_opt(tm_raw, "csv_path", "violations.csv"))
+        audit_csv_path = str(_opt(tm_raw, "audit_csv_path", "violations_audit.csv"))
         tm_queue_max = int(_opt(tm_raw, "queue_max", 20000))
         tm_drop = bool(_opt(tm_raw, "drop_on_full", True))
         flush_n = int(_opt(tm_raw, "flush_every_n", 200))
         flush_s = float(_opt(tm_raw, "flush_every_sec", 2.0))
         cooldown = float(_opt(tm_raw, "cooldown_sec", 0.0))
+        audit_on_negative_latency = bool(_opt(tm_raw, "audit_on_negative_latency", True))
 
         rules_raw = _opt(tm_raw, "rules", None)
         rules = _to_rules_map(rules_raw, "threshold_monitor.rules")
@@ -216,11 +220,13 @@ def load_config(path: str = "config.yaml") -> AppConfig:
         threshold_monitor = ThresholdMonitorConfig(
             enabled=enabled,
             csv_path=csv_path,
+            audit_csv_path=audit_csv_path,
             queue_max=tm_queue_max,
             drop_on_full=tm_drop,
             flush_every_n=flush_n,
             flush_every_sec=flush_s,
             cooldown_sec=cooldown,
+            audit_on_negative_latency=audit_on_negative_latency,
             rules=rules,
         )
 

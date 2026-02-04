@@ -4,16 +4,16 @@ import csv
 import os
 import threading
 import time
-from queue import Queue, Full, Empty
 from datetime import datetime, timezone
+from queue import Queue, Full, Empty
 from typing import List
 
-from core import ViolationEvent
+from core import LatencyAuditEvent
 
 
-class AsyncCsvViolationWriter:
+class AsyncCsvLatencyAuditWriter:
     """
-    Escrita assíncrona de violações em CSV.
+    Escrita assíncrona de auditoria de latência em CSV.
     Não bloqueia o caminho crítico.
     """
 
@@ -31,7 +31,7 @@ class AsyncCsvViolationWriter:
         self.flush_every_n = flush_every_n
         self.flush_every_sec = flush_every_sec
 
-        self._q: Queue[ViolationEvent] = Queue(maxsize=queue_max)
+        self._q: Queue[LatencyAuditEvent] = Queue(maxsize=queue_max)
         self._stop = threading.Event()
         self._t = threading.Thread(target=self._worker, daemon=True)
 
@@ -42,7 +42,7 @@ class AsyncCsvViolationWriter:
         self._stop.set()
         self._t.join(timeout=5)
 
-    def publish(self, ev: ViolationEvent) -> None:
+    def publish(self, ev: LatencyAuditEvent) -> None:
         try:
             self._q.put_nowait(ev)
         except Full:
@@ -58,26 +58,36 @@ class AsyncCsvViolationWriter:
         if not os.path.exists(self.csv_path) or os.path.getsize(self.csv_path) == 0:
             with open(self.csv_path, "a", newline="", encoding="utf-8") as f:
                 csv.writer(f).writerow(
-                    ["utc_time", "ppa", "value", "rule_id", "rule"]
+                    [
+                        "utc_arrival",
+                        "utc_measurement",
+                        "ppa",
+                        "value",
+                        "latency_ms",
+                        "flags",
+                    ]
                 )
 
-    def _flush(self, batch: List[ViolationEvent]) -> None:
+    def _flush(self, batch: List[LatencyAuditEvent]) -> None:
         if not batch:
             return
         self._ensure_header()
         with open(self.csv_path, "a", newline="", encoding="utf-8") as f:
             w = csv.writer(f)
             for ev in batch:
-                w.writerow([
-                    self._fmt_epoch(ev.t_epoch),
-                    ev.ppa,
-                    ev.value,
-                    ev.rule_id,
-                    ev.rule,
-                ])
+                w.writerow(
+                    [
+                        self._fmt_epoch(ev.t_arrival_epoch),
+                        self._fmt_epoch(ev.t_meas_epoch),
+                        ev.ppa,
+                        ev.value,
+                        f"{ev.latency_ms:.3f}",
+                        ev.flags,
+                    ]
+                )
 
     def _worker(self) -> None:
-        batch: List[ViolationEvent] = []
+        batch: List[LatencyAuditEvent] = []
         last_flush = time.time()
 
         while not self._stop.is_set():

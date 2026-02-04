@@ -3,8 +3,7 @@ from gsf import Limits
 import re
 
 from config import load_config
-from app.processor import ShardedWindowProcessor
-from app.pipeline import LatencyPipeline, WindowPolicy
+from core import LatencyPipeline, ShardedWindowProcessor, WindowPolicy
 from infra.clock import SystemClock
 from infra.sinks import PrintSink
 from infra.key_extractors import PpaKeyExtractor
@@ -13,8 +12,9 @@ from infra.sttp_client import SttpLatencySubscriber
 from infra.http_tick_sink import HttpTickSink
 from infra.ppa_mapper import DictPpaMapper
 
-from app.threshold_monitor import ThresholdMonitor, ThresholdMonitorConfig
+from core import ThresholdMonitor, ThresholdMonitorConfig
 from infra.violations_csv_sink import AsyncCsvViolationWriter
+from infra.analysis_csv_sink import AsyncCsvLatencyAuditWriter
 
 
 def _extract_ppas_from_subscription(text: str) -> list[int]:
@@ -78,6 +78,7 @@ def main():
     # ---- prepara monitor de violações (opcional) ----
     threshold_monitor = None
     violation_writer = None
+    audit_writer = None
     monitor_keys: set[int] = set()
 
     if cfg.threshold_monitor and cfg.threshold_monitor.enabled:
@@ -97,6 +98,15 @@ def main():
             flush_every_sec=cfg.threshold_monitor.flush_every_sec,
         )
         violation_writer.start()
+
+        audit_writer = AsyncCsvLatencyAuditWriter(
+            cfg.threshold_monitor.audit_csv_path,
+            queue_max=cfg.threshold_monitor.queue_max,
+            drop_on_full=cfg.threshold_monitor.drop_on_full,
+            flush_every_n=cfg.threshold_monitor.flush_every_n,
+            flush_every_sec=cfg.threshold_monitor.flush_every_sec,
+        )
+        audit_writer.start()
 
         print(f"[violations] enabled=True csv={cfg.threshold_monitor.csv_path} rules_ppas={sorted(monitor_keys)}")
     else:
@@ -187,6 +197,9 @@ def main():
         stats_keys=stats_keys,
         threshold_monitor=threshold_monitor,
         violation_sink=violation_writer,
+        analysis_sink=audit_writer,
+        audit_keys=monitor_keys,
+        audit_on_negative_latency=cfg.threshold_monitor.audit_on_negative_latency if cfg.threshold_monitor else True,
     )
 
     sub.config.compress_payloaddata = False
@@ -210,7 +223,11 @@ def main():
                     if violation_writer is not None:
                         violation_writer.stop()
                 finally:
-                    sub.dispose()
+                    try:
+                        if audit_writer is not None:
+                            audit_writer.stop()
+                    finally:
+                        sub.dispose()
 
 
 if __name__ == "__main__":

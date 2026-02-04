@@ -8,10 +8,17 @@ from sttp.settings import Settings
 from sttp.transport.measurement import Measurement
 from sttp.transport.signalindexcache import SignalIndexCache
 
-from domain.models import LatencyEvent
-from domain.ports import Clock, KeyExtractor, ViolationSink
-from app.pipeline import LatencyPipeline
-from app.threshold_monitor import ThresholdMonitor
+from core import (
+    Clock,
+    KeyExtractor,
+    LatencyAuditEvent,
+    LatencyAuditSink,
+    LatencyEvent,
+    LatencyPipeline,
+    ThresholdMonitor,
+    ViolationEvent,
+    ViolationSink,
+)
 
 
 class SttpLatencySubscriber(Subscriber):
@@ -24,6 +31,9 @@ class SttpLatencySubscriber(Subscriber):
         stats_keys: Optional[Set[int]] = None,
         threshold_monitor: Optional[ThresholdMonitor] = None,
         violation_sink: Optional[ViolationSink] = None,
+        analysis_sink: Optional[LatencyAuditSink] = None,
+        audit_keys: Optional[Set[int]] = None,
+        audit_on_negative_latency: bool = True,
         # -----------------------------
         # Alinhamento
         # -----------------------------
@@ -43,6 +53,11 @@ class SttpLatencySubscriber(Subscriber):
         # Monitor de violações (medidas) - independente do pipeline
         self.threshold_monitor = threshold_monitor
         self.violation_sink = violation_sink
+
+        # Auditoria de latência (persistência de tudo analisado)
+        self.analysis_sink = analysis_sink
+        self.audit_keys: Set[int] = set(int(x) for x in (audit_keys or set()))
+        self.audit_on_negative_latency = audit_on_negative_latency
 
         self._started = False
 
@@ -120,6 +135,8 @@ class SttpLatencySubscriber(Subscriber):
         # dedupe dentro do batch
         seen_batch: Set[Tuple[int, float]] = set()
 
+        audit_events: List[LatencyAuditEvent] = []
+        negative_latency_found = False
         dropped_dupes = 0
         processed = 0
 
@@ -128,6 +145,7 @@ class SttpLatencySubscriber(Subscriber):
             key = int(self.key_extractor.key_from(m, md))
 
             t_meas_epoch = float(m.datetime.timestamp())
+            latency = (arrival_epoch - t_meas_epoch) * 1000.0
 
             # ============================
             # DEDUPE GATE (batch + TTL)
@@ -161,6 +179,31 @@ class SttpLatencySubscriber(Subscriber):
 
             value = float(m.value)
 
+            if self.analysis_sink is not None and key in self.audit_keys:
+                audit_events.append(
+                    LatencyAuditEvent(
+                        t_arrival_epoch=arrival_epoch,
+                        t_meas_epoch=t_meas_epoch,
+                        ppa=key,
+                        value=value,
+                        latency_ms=latency,
+                        flags=int(m.flags),
+                    )
+                )
+                if latency < 0:
+                    negative_latency_found = True
+
+            if latency < 0 and self.violation_sink is not None:
+                self.violation_sink.publish(
+                    ViolationEvent(
+                        t_epoch=arrival_epoch,
+                        ppa=int(key),
+                        value=float(latency),
+                        rule_id="LATENCY_LT_0",
+                        rule="< 0 ms",
+                    )
+                )
+
             # (1) Violações (não entra se for repetido)
             if self.threshold_monitor is not None and self.violation_sink is not None:
                 violations = self.threshold_monitor.check(
@@ -183,6 +226,11 @@ class SttpLatencySubscriber(Subscriber):
                 value=value,
             )
             self.pipeline.submit(ev)
+
+        if self.analysis_sink is not None and audit_events:
+            if (not self.audit_on_negative_latency) or negative_latency_found:
+                for ev in audit_events:
+                    self.analysis_sink.publish(ev)
 
         # Agora o "batch size" reflete o que foi realmente processado
         self.pipeline.on_batch_received(batch_size=processed)

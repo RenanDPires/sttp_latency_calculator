@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Mapping, Optional
-from domain.ports import PpaMapper, PpaDestinations
+from core import PpaDestinations, PpaMapper
 
 class DictPpaMapper(PpaMapper):
     def __init__(
