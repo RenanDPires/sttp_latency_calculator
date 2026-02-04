@@ -1,5 +1,5 @@
 from time import time
-from domain.ports import Clock
+from core import Clock
 
 # epoch seconds (float)
 class SystemClock(Clock):
