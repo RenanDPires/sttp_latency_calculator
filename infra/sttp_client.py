@@ -79,7 +79,7 @@ class SttpLatencySubscriber(Subscriber):
         # -----------------------------
         # Dedupe (drop de frames repetidos)
         # -----------------------------
-        self._dedupe_ttl_s: float = 5.0  # janela de dedupe entre batches
+        self._dedupe_ttl_s: float = 5.0  # janela de dedupe entre batches -- Time To Live
         self._dedupe_seen: Dict[Tuple[int, float], float] = {}  # (ppa, t_meas_epoch) -> last_seen_arrival_epoch
         self._dedupe_cleanup_every: int = 2000
         self._dedupe_i: int = 0
@@ -108,7 +108,7 @@ class SttpLatencySubscriber(Subscriber):
             self.statusmessage("Receiving measurements...")
 
         # ============================
-        # ALIGN GATE: descarta até o próximo X0
+        # ALIGN GATE: descarta até o primeiro início em X0
         # ============================
         if not self._aligned:
             now_epoch = float(self.clock.now_epoch())
