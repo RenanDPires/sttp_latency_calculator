@@ -42,7 +42,7 @@ from core import (
 from infra.raw_measurement_csv_sink import AsyncCsvRawMeasurementWriter, build_raw_measurement_record
 
 
-class SttpLatencySubscriber(Subscriber):
+class SttpSubscriber(Subscriber):
     # Subscriber especializado em:
     # 1) receber measurements via STTP
     # 2) calcular latência (arrival - measurement timestamp)

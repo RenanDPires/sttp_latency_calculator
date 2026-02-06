@@ -7,7 +7,7 @@ from core import LatencyPipeline, ShardedWindowProcessor, WindowPolicy
 from infra.clock import SystemClock
 from infra.sinks import PrintSink
 from infra.key_extractors import PpaKeyExtractor
-from infra.sttp_client import SttpLatencySubscriber
+from infra.sttp_client import SttpSubscriber
 
 from infra.http_tick_sink import HttpTickSink
 from infra.ppa_mapper import DictPpaMapper
@@ -196,7 +196,7 @@ def main():
     key_extractor = PpaKeyExtractor()
 
     # IMPORTANTE: subscriber deve suportar stats_keys, threshold_monitor e violation_sink
-    sub = SttpLatencySubscriber(
+    sub = SttpSubscriber(
         pipeline=pipeline,
         clock=clock,
         key_extractor=key_extractor,
