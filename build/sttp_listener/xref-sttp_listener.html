@@ -21,14 +21,12 @@ imports:
     <a href="#_collections_abc">_collections_abc</a>
  &#8226;   <a href="#_weakrefset">_weakrefset</a>
  &#8226;   <a href="#abc">abc</a>
- &#8226;   <a href="#app.pipeline">app.pipeline</a>
- &#8226;   <a href="#app.processor">app.processor</a>
- &#8226;   <a href="#app.threshold_monitor">app.threshold_monitor</a>
  &#8226;   <a href="#codecs">codecs</a>
  &#8226;   <a href="#collections">collections</a>
  &#8226;   <a href="#collections.abc">collections.abc</a>
  &#8226;   <a href="#config">config</a>
  &#8226;   <a href="#copyreg">copyreg</a>
+ &#8226;   <a href="#core">core</a>
  &#8226;   <a href="#encodings">encodings</a>
  &#8226;   <a href="#encodings.aliases">encodings.aliases</a>
  &#8226;   <a href="#encodings.ascii">encodings.ascii</a>
@@ -160,9 +158,11 @@ imports:
  &#8226;   <a href="#infra.http_tick_sink">infra.http_tick_sink</a>
  &#8226;   <a href="#infra.key_extractors">infra.key_extractors</a>
  &#8226;   <a href="#infra.ppa_mapper">infra.ppa_mapper</a>
+ &#8226;   <a href="#infra.raw_measurement_csv_sink">infra.raw_measurement_csv_sink</a>
  &#8226;   <a href="#infra.sinks">infra.sinks</a>
  &#8226;   <a href="#infra.sttp_client">infra.sttp_client</a>
  &#8226;   <a href="#infra.violations_csv_sink">infra.violations_csv_sink</a>
+ &#8226;   <a href="#infra.window_audit_csv_sink">infra.window_audit_csv_sink</a>
  &#8226;   <a href="#io">io</a>
  &#8226;   <a href="#keyword">keyword</a>
  &#8226;   <a href="#linecache">linecache</a>
@@ -1570,17 +1570,11 @@ imported by:
  &#8226;   <a href="#anyio.streams.stapled">anyio.streams.stapled</a>
  &#8226;   <a href="#anyio.streams.tls">anyio.streams.tls</a>
  &#8226;   <a href="#anyio.to_thread">anyio.to_thread</a>
- &#8226;   <a href="#app.pipeline">app.pipeline</a>
- &#8226;   <a href="#app.processor">app.processor</a>
- &#8226;   <a href="#app.threshold_monitor">app.threshold_monitor</a>
  &#8226;   <a href="#codeop">codeop</a>
  &#8226;   <a href="#config">config</a>
+ &#8226;   <a href="#core">core</a>
  &#8226;   <a href="#dateutil.parser._parser">dateutil.parser._parser</a>
  &#8226;   <a href="#doctest">doctest</a>
- &#8226;   <a href="#domain.models">domain.models</a>
- &#8226;   <a href="#domain.ports">domain.ports</a>
- &#8226;   <a href="#domain.thresholds">domain.thresholds</a>
- &#8226;   <a href="#domain.violations">domain.violations</a>
  &#8226;   <a href="#httpcore._api">httpcore._api</a>
  &#8226;   <a href="#httpcore._async.connection">httpcore._async.connection</a>
  &#8226;   <a href="#httpcore._async.connection_pool">httpcore._async.connection_pool</a>
@@ -1627,9 +1621,11 @@ imported by:
  &#8226;   <a href="#httpx._utils">httpx._utils</a>
  &#8226;   <a href="#infra.http_tick_sink">infra.http_tick_sink</a>
  &#8226;   <a href="#infra.key_extractors">infra.key_extractors</a>
+ &#8226;   <a href="#infra.raw_measurement_csv_sink">infra.raw_measurement_csv_sink</a>
  &#8226;   <a href="#infra.sinks">infra.sinks</a>
  &#8226;   <a href="#infra.sttp_client">infra.sttp_client</a>
  &#8226;   <a href="#infra.violations_csv_sink">infra.violations_csv_sink</a>
+ &#8226;   <a href="#infra.window_audit_csv_sink">infra.window_audit_csv_sink</a>
  &#8226;   <a href="#packaging.version">packaging.version</a>
  &#8226;   <a href="#pydoc">pydoc</a>
  &#8226;   <a href="#six">six</a>
@@ -5197,89 +5193,6 @@ imported by:
 </div>
 
 <div class="node">
-  <a name="app"></a>
-  <a target="code" href="-" type="text/plain"><tt>app</tt></a>
-<span class="moduletype">NamespacePackage</span>  <div class="import">
-imported by:
-    <a href="#app.pipeline">app.pipeline</a>
- &#8226;   <a href="#app.processor">app.processor</a>
- &#8226;   <a href="#app.threshold_monitor">app.threshold_monitor</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="app.pipeline"></a>
-  <a target="code" href="///D:/Projetos/sttp_latency_calculator/app/pipeline.py" type="text/plain"><tt>app.pipeline</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#__future__">__future__</a>
- &#8226;   <a href="#app">app</a>
- &#8226;   <a href="#app.processor">app.processor</a>
- &#8226;   <a href="#collections">collections</a>
- &#8226;   <a href="#dataclasses">dataclasses</a>
- &#8226;   <a href="#datetime">datetime</a>
- &#8226;   <a href="#domain.models">domain.models</a>
- &#8226;   <a href="#domain.ports">domain.ports</a>
- &#8226;   <a href="#math">math</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#infra.sttp_client">infra.sttp_client</a>
- &#8226;   <a href="#main.py">main.py</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="app.processor"></a>
-  <a target="code" href="///D:/Projetos/sttp_latency_calculator/app/processor.py" type="text/plain"><tt>app.processor</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#__future__">__future__</a>
- &#8226;   <a href="#app">app</a>
- &#8226;   <a href="#domain.models">domain.models</a>
- &#8226;   <a href="#domain.services">domain.services</a>
- &#8226;   <a href="#queue">queue</a>
- &#8226;   <a href="#threading">threading</a>
- &#8226;   <a href="#typing">typing</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#app.pipeline">app.pipeline</a>
- &#8226;   <a href="#main.py">main.py</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="app.threshold_monitor"></a>
-  <a target="code" href="///D:/Projetos/sttp_latency_calculator/app/threshold_monitor.py" type="text/plain"><tt>app.threshold_monitor</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#__future__">__future__</a>
- &#8226;   <a href="#app">app</a>
- &#8226;   <a href="#dataclasses">dataclasses</a>
- &#8226;   <a href="#domain.thresholds">domain.thresholds</a>
- &#8226;   <a href="#domain.violations">domain.violations</a>
- &#8226;   <a href="#typing">typing</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#infra.sttp_client">infra.sttp_client</a>
- &#8226;   <a href="#main.py">main.py</a>
-
-  </div>
-
-</div>
-
-<div class="node">
   <a name="argparse"></a>
   <a target="code" href="///C:/Users/renan/AppData/Local/Programs/Python/Python312/Lib/argparse.py" type="text/plain"><tt>argparse</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -6855,7 +6768,6 @@ imported by:
  &#8226;   <a href="#anyio._backends._asyncio">anyio._backends._asyncio</a>
  &#8226;   <a href="#anyio._core._synchronization">anyio._core._synchronization</a>
  &#8226;   <a href="#anyio.streams.memory">anyio.streams.memory</a>
- &#8226;   <a href="#app.pipeline">app.pipeline</a>
  &#8226;   <a href="#ast">ast</a>
  &#8226;   <a href="#asyncio.base_events">asyncio.base_events</a>
  &#8226;   <a href="#asyncio.base_subprocess">asyncio.base_subprocess</a>
@@ -6868,6 +6780,7 @@ imported by:
  &#8226;   <a href="#collections.abc">collections.abc</a>
  &#8226;   <a href="#concurrent.futures._base">concurrent.futures._base</a>
  &#8226;   <a href="#contextlib">contextlib</a>
+ &#8226;   <a href="#core">core</a>
  &#8226;   <a href="#dateutil.tz._factories">dateutil.tz._factories</a>
  &#8226;   <a href="#dateutil.tz.tz">dateutil.tz.tz</a>
  &#8226;   <a href="#difflib">difflib</a>
@@ -7099,8 +7012,8 @@ imported by:
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
+ &#8226;   <a href="#core">core</a>
  &#8226;   <a href="#dataclasses">dataclasses</a>
- &#8226;   <a href="#domain.thresholds">domain.thresholds</a>
  &#8226;   <a href="#pathlib">pathlib</a>
  &#8226;   <a href="#typing">typing</a>
  &#8226;   <a href="#yaml">yaml</a>
@@ -7266,6 +7179,39 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="core"></a>
+  <a target="code" href="///D:/Projetos/sttp_latency_calculator/core.py" type="text/plain"><tt>core</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#__future__">__future__</a>
+ &#8226;   <a href="#collections">collections</a>
+ &#8226;   <a href="#dataclasses">dataclasses</a>
+ &#8226;   <a href="#datetime">datetime</a>
+ &#8226;   <a href="#math">math</a>
+ &#8226;   <a href="#queue">queue</a>
+ &#8226;   <a href="#sttp.transport.measurement">sttp.transport.measurement</a>
+ &#8226;   <a href="#threading">threading</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#config">config</a>
+ &#8226;   <a href="#infra.clock">infra.clock</a>
+ &#8226;   <a href="#infra.http_tick_sink">infra.http_tick_sink</a>
+ &#8226;   <a href="#infra.key_extractors">infra.key_extractors</a>
+ &#8226;   <a href="#infra.ppa_mapper">infra.ppa_mapper</a>
+ &#8226;   <a href="#infra.sinks">infra.sinks</a>
+ &#8226;   <a href="#infra.sttp_client">infra.sttp_client</a>
+ &#8226;   <a href="#infra.violations_csv_sink">infra.violations_csv_sink</a>
+ &#8226;   <a href="#infra.window_audit_csv_sink">infra.window_audit_csv_sink</a>
+ &#8226;   <a href="#main.py">main.py</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="csv"></a>
   <a target="code" href="///C:/Users/renan/AppData/Local/Programs/Python/Python312/Lib/csv.py" type="text/plain"><tt>csv</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -7279,7 +7225,9 @@ imports:
   <div class="import">
 imported by:
     <a href="#importlib.metadata">importlib.metadata</a>
+ &#8226;   <a href="#infra.raw_measurement_csv_sink">infra.raw_measurement_csv_sink</a>
  &#8226;   <a href="#infra.violations_csv_sink">infra.violations_csv_sink</a>
+ &#8226;   <a href="#infra.window_audit_csv_sink">infra.window_audit_csv_sink</a>
 
   </div>
 
@@ -7512,13 +7460,8 @@ imported by:
  &#8226;   <a href="#anyio.streams.memory">anyio.streams.memory</a>
  &#8226;   <a href="#anyio.streams.stapled">anyio.streams.stapled</a>
  &#8226;   <a href="#anyio.streams.tls">anyio.streams.tls</a>
- &#8226;   <a href="#app.pipeline">app.pipeline</a>
- &#8226;   <a href="#app.threshold_monitor">app.threshold_monitor</a>
  &#8226;   <a href="#config">config</a>
- &#8226;   <a href="#domain.models">domain.models</a>
- &#8226;   <a href="#domain.ports">domain.ports</a>
- &#8226;   <a href="#domain.thresholds">domain.thresholds</a>
- &#8226;   <a href="#domain.violations">domain.violations</a>
+ &#8226;   <a href="#core">core</a>
  &#8226;   <a href="#h11._events">h11._events</a>
  &#8226;   <a href="#infra.http_tick_sink">infra.http_tick_sink</a>
  &#8226;   <a href="#infra.ppa_mapper">infra.ppa_mapper</a>
@@ -7553,8 +7496,8 @@ imports:
   <div class="import">
 imported by:
     <a href="#_strptime">_strptime</a>
- &#8226;   <a href="#app.pipeline">app.pipeline</a>
  &#8226;   <a href="#calendar">calendar</a>
+ &#8226;   <a href="#core">core</a>
  &#8226;   <a href="#dateutil.easter">dateutil.easter</a>
  &#8226;   <a href="#dateutil.parser._parser">dateutil.parser._parser</a>
  &#8226;   <a href="#dateutil.parser.isoparser">dateutil.parser.isoparser</a>
@@ -7570,8 +7513,10 @@ imported by:
  &#8226;   <a href="#http.server">http.server</a>
  &#8226;   <a href="#httpx._client">httpx._client</a>
  &#8226;   <a href="#httpx._models">httpx._models</a>
+ &#8226;   <a href="#infra.raw_measurement_csv_sink">infra.raw_measurement_csv_sink</a>
  &#8226;   <a href="#infra.sinks">infra.sinks</a>
  &#8226;   <a href="#infra.violations_csv_sink">infra.violations_csv_sink</a>
+ &#8226;   <a href="#infra.window_audit_csv_sink">infra.window_audit_csv_sink</a>
  &#8226;   <a href="#sttp.data.datarow">sttp.data.datarow</a>
  &#8226;   <a href="#sttp.data.dataset">sttp.data.dataset</a>
  &#8226;   <a href="#sttp.data.expressiontree">sttp.data.expressiontree</a>
@@ -8079,127 +8024,6 @@ imports:
   <div class="import">
 imported by:
     <a href="#numpy.testing._private.utils">numpy.testing._private.utils</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="domain"></a>
-  <a target="code" href="-" type="text/plain"><tt>domain</tt></a>
-<span class="moduletype">NamespacePackage</span>  <div class="import">
-imported by:
-    <a href="#domain.models">domain.models</a>
- &#8226;   <a href="#domain.ports">domain.ports</a>
- &#8226;   <a href="#domain.services">domain.services</a>
- &#8226;   <a href="#domain.thresholds">domain.thresholds</a>
- &#8226;   <a href="#domain.violations">domain.violations</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="domain.models"></a>
-  <a target="code" href="///D:/Projetos/sttp_latency_calculator/domain/models.py" type="text/plain"><tt>domain.models</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#__future__">__future__</a>
- &#8226;   <a href="#dataclasses">dataclasses</a>
- &#8226;   <a href="#domain">domain</a>
- &#8226;   <a href="#typing">typing</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#app.pipeline">app.pipeline</a>
- &#8226;   <a href="#app.processor">app.processor</a>
- &#8226;   <a href="#domain.ports">domain.ports</a>
- &#8226;   <a href="#infra.sinks">infra.sinks</a>
- &#8226;   <a href="#infra.sttp_client">infra.sttp_client</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="domain.ports"></a>
-  <a target="code" href="///D:/Projetos/sttp_latency_calculator/domain/ports.py" type="text/plain"><tt>domain.ports</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#__future__">__future__</a>
- &#8226;   <a href="#dataclasses">dataclasses</a>
- &#8226;   <a href="#domain">domain</a>
- &#8226;   <a href="#domain.models">domain.models</a>
- &#8226;   <a href="#sttp.transport.measurement">sttp.transport.measurement</a>
- &#8226;   <a href="#typing">typing</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#app.pipeline">app.pipeline</a>
- &#8226;   <a href="#infra.clock">infra.clock</a>
- &#8226;   <a href="#infra.http_tick_sink">infra.http_tick_sink</a>
- &#8226;   <a href="#infra.key_extractors">infra.key_extractors</a>
- &#8226;   <a href="#infra.ppa_mapper">infra.ppa_mapper</a>
- &#8226;   <a href="#infra.sinks">infra.sinks</a>
- &#8226;   <a href="#infra.sttp_client">infra.sttp_client</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="domain.services"></a>
-  <a target="code" href="///D:/Projetos/sttp_latency_calculator/domain/services.py" type="text/plain"><tt>domain.services</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#domain">domain</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#app.processor">app.processor</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="domain.thresholds"></a>
-  <a target="code" href="///D:/Projetos/sttp_latency_calculator/domain/thresholds.py" type="text/plain"><tt>domain.thresholds</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#__future__">__future__</a>
- &#8226;   <a href="#dataclasses">dataclasses</a>
- &#8226;   <a href="#domain">domain</a>
- &#8226;   <a href="#math">math</a>
- &#8226;   <a href="#typing">typing</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#app.threshold_monitor">app.threshold_monitor</a>
- &#8226;   <a href="#config">config</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="domain.violations"></a>
-  <a target="code" href="///D:/Projetos/sttp_latency_calculator/domain/violations.py" type="text/plain"><tt>domain.violations</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#__future__">__future__</a>
- &#8226;   <a href="#dataclasses">dataclasses</a>
- &#8226;   <a href="#domain">domain</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#app.threshold_monitor">app.threshold_monitor</a>
- &#8226;   <a href="#infra.violations_csv_sink">infra.violations_csv_sink</a>
 
   </div>
 
@@ -14580,9 +14404,11 @@ imported by:
  &#8226;   <a href="#infra.http_tick_sink">infra.http_tick_sink</a>
  &#8226;   <a href="#infra.key_extractors">infra.key_extractors</a>
  &#8226;   <a href="#infra.ppa_mapper">infra.ppa_mapper</a>
+ &#8226;   <a href="#infra.raw_measurement_csv_sink">infra.raw_measurement_csv_sink</a>
  &#8226;   <a href="#infra.sinks">infra.sinks</a>
  &#8226;   <a href="#infra.sttp_client">infra.sttp_client</a>
  &#8226;   <a href="#infra.violations_csv_sink">infra.violations_csv_sink</a>
+ &#8226;   <a href="#infra.window_audit_csv_sink">infra.window_audit_csv_sink</a>
 
   </div>
 
@@ -14593,7 +14419,7 @@ imported by:
   <a target="code" href="///D:/Projetos/sttp_latency_calculator/infra/clock.py" type="text/plain"><tt>infra.clock</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
-    <a href="#domain.ports">domain.ports</a>
+    <a href="#core">core</a>
  &#8226;   <a href="#infra">infra</a>
  &#8226;   <a href="#time">time</a>
 
@@ -14612,8 +14438,8 @@ imported by:
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
+ &#8226;   <a href="#core">core</a>
  &#8226;   <a href="#dataclasses">dataclasses</a>
- &#8226;   <a href="#domain.ports">domain.ports</a>
  &#8226;   <a href="#httpx">httpx</a>
  &#8226;   <a href="#infra">infra</a>
  &#8226;   <a href="#queue">queue</a>
@@ -14636,7 +14462,7 @@ imported by:
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
- &#8226;   <a href="#domain.ports">domain.ports</a>
+ &#8226;   <a href="#core">core</a>
  &#8226;   <a href="#infra">infra</a>
  &#8226;   <a href="#sttp.transport.measurement">sttp.transport.measurement</a>
 
@@ -14654,8 +14480,8 @@ imported by:
   <a target="code" href="///D:/Projetos/sttp_latency_calculator/infra/ppa_mapper.py" type="text/plain"><tt>infra.ppa_mapper</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
-    <a href="#dataclasses">dataclasses</a>
- &#8226;   <a href="#domain.ports">domain.ports</a>
+    <a href="#core">core</a>
+ &#8226;   <a href="#dataclasses">dataclasses</a>
  &#8226;   <a href="#infra">infra</a>
  &#8226;   <a href="#typing">typing</a>
 
@@ -14669,14 +14495,38 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="infra.raw_measurement_csv_sink"></a>
+  <a target="code" href="///D:/Projetos/sttp_latency_calculator/infra/raw_measurement_csv_sink.py" type="text/plain"><tt>infra.raw_measurement_csv_sink</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#__future__">__future__</a>
+ &#8226;   <a href="#csv">csv</a>
+ &#8226;   <a href="#datetime">datetime</a>
+ &#8226;   <a href="#infra">infra</a>
+ &#8226;   <a href="#os">os</a>
+ &#8226;   <a href="#queue">queue</a>
+ &#8226;   <a href="#threading">threading</a>
+ &#8226;   <a href="#time">time</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#infra.sttp_client">infra.sttp_client</a>
+ &#8226;   <a href="#main.py">main.py</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="infra.sinks"></a>
   <a target="code" href="///D:/Projetos/sttp_latency_calculator/infra/sinks.py" type="text/plain"><tt>infra.sinks</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
+ &#8226;   <a href="#core">core</a>
  &#8226;   <a href="#datetime">datetime</a>
- &#8226;   <a href="#domain.models">domain.models</a>
- &#8226;   <a href="#domain.ports">domain.ports</a>
  &#8226;   <a href="#infra">infra</a>
 
   </div>
@@ -14694,11 +14544,9 @@ imported by:
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
- &#8226;   <a href="#app.pipeline">app.pipeline</a>
- &#8226;   <a href="#app.threshold_monitor">app.threshold_monitor</a>
- &#8226;   <a href="#domain.models">domain.models</a>
- &#8226;   <a href="#domain.ports">domain.ports</a>
+ &#8226;   <a href="#core">core</a>
  &#8226;   <a href="#infra">infra</a>
+ &#8226;   <a href="#infra.raw_measurement_csv_sink">infra.raw_measurement_csv_sink</a>
  &#8226;   <a href="#sttp.config">sttp.config</a>
  &#8226;   <a href="#sttp.settings">sttp.settings</a>
  &#8226;   <a href="#sttp.subscriber">sttp.subscriber</a>
@@ -14721,14 +14569,36 @@ imported by:
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
+ &#8226;   <a href="#core">core</a>
  &#8226;   <a href="#csv">csv</a>
  &#8226;   <a href="#datetime">datetime</a>
- &#8226;   <a href="#domain.violations">domain.violations</a>
  &#8226;   <a href="#infra">infra</a>
  &#8226;   <a href="#os">os</a>
  &#8226;   <a href="#queue">queue</a>
  &#8226;   <a href="#threading">threading</a>
  &#8226;   <a href="#time">time</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="infra.window_audit_csv_sink"></a>
+  <a target="code" href="///D:/Projetos/sttp_latency_calculator/infra/window_audit_csv_sink.py" type="text/plain"><tt>infra.window_audit_csv_sink</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#__future__">__future__</a>
+ &#8226;   <a href="#core">core</a>
+ &#8226;   <a href="#csv">csv</a>
+ &#8226;   <a href="#datetime">datetime</a>
+ &#8226;   <a href="#infra">infra</a>
+ &#8226;   <a href="#os">os</a>
  &#8226;   <a href="#typing">typing</a>
 
   </div>
@@ -15260,11 +15130,10 @@ imported by:
  &#8226;   <a href="#anyio._core._synchronization">anyio._core._synchronization</a>
  &#8226;   <a href="#anyio._core._tasks">anyio._core._tasks</a>
  &#8226;   <a href="#anyio.abc._eventloop">anyio.abc._eventloop</a>
- &#8226;   <a href="#app.pipeline">app.pipeline</a>
  &#8226;   <a href="#asyncio.windows_events">asyncio.windows_events</a>
+ &#8226;   <a href="#core">core</a>
  &#8226;   <a href="#dateutil.relativedelta">dateutil.relativedelta</a>
  &#8226;   <a href="#dateutil.rrule">dateutil.rrule</a>
- &#8226;   <a href="#domain.thresholds">domain.thresholds</a>
  &#8226;   <a href="#fractions">fractions</a>
  &#8226;   <a href="#numpy._core._internal">numpy._core._internal</a>
  &#8226;   <a href="#numpy._core.fromnumeric">numpy._core.fromnumeric</a>
@@ -23033,7 +22902,9 @@ imported by:
  &#8226;   <a href="#importlib.resources._common">importlib.resources._common</a>
  &#8226;   <a href="#importlib.resources._legacy">importlib.resources._legacy</a>
  &#8226;   <a href="#importlib.resources.abc">importlib.resources.abc</a>
+ &#8226;   <a href="#infra.raw_measurement_csv_sink">infra.raw_measurement_csv_sink</a>
  &#8226;   <a href="#infra.violations_csv_sink">infra.violations_csv_sink</a>
+ &#8226;   <a href="#infra.window_audit_csv_sink">infra.window_audit_csv_sink</a>
  &#8226;   <a href="#inspect">inspect</a>
  &#8226;   <a href="#linecache">linecache</a>
  &#8226;   <a href="#locale">locale</a>
@@ -31445,10 +31316,11 @@ imports:
 imported by:
     <a href="#anyio._backends._asyncio">anyio._backends._asyncio</a>
  &#8226;   <a href="#anyio._backends._trio">anyio._backends._trio</a>
- &#8226;   <a href="#app.processor">app.processor</a>
  &#8226;   <a href="#concurrent.futures.process">concurrent.futures.process</a>
  &#8226;   <a href="#concurrent.futures.thread">concurrent.futures.thread</a>
+ &#8226;   <a href="#core">core</a>
  &#8226;   <a href="#infra.http_tick_sink">infra.http_tick_sink</a>
+ &#8226;   <a href="#infra.raw_measurement_csv_sink">infra.raw_measurement_csv_sink</a>
  &#8226;   <a href="#infra.violations_csv_sink">infra.violations_csv_sink</a>
  &#8226;   <a href="#multiprocessing.dummy">multiprocessing.dummy</a>
  &#8226;   <a href="#multiprocessing.dummy.connection">multiprocessing.dummy.connection</a>
@@ -33515,7 +33387,7 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#domain.ports">domain.ports</a>
+    <a href="#core">core</a>
  &#8226;   <a href="#infra.key_extractors">infra.key_extractors</a>
  &#8226;   <a href="#infra.sttp_client">infra.sttp_client</a>
  &#8226;   <a href="#sttp.reader">sttp.reader</a>
@@ -34125,7 +33997,6 @@ imported by:
  &#8226;   <a href="#anyio._core._asyncio_selector_thread">anyio._core._asyncio_selector_thread</a>
  &#8226;   <a href="#anyio._core._eventloop">anyio._core._eventloop</a>
  &#8226;   <a href="#anyio.from_thread">anyio.from_thread</a>
- &#8226;   <a href="#app.processor">app.processor</a>
  &#8226;   <a href="#asyncio.base_events">asyncio.base_events</a>
  &#8226;   <a href="#asyncio.events">asyncio.events</a>
  &#8226;   <a href="#asyncio.mixins">asyncio.mixins</a>
@@ -34135,10 +34006,12 @@ imported by:
  &#8226;   <a href="#concurrent.futures._base">concurrent.futures._base</a>
  &#8226;   <a href="#concurrent.futures.process">concurrent.futures.process</a>
  &#8226;   <a href="#concurrent.futures.thread">concurrent.futures.thread</a>
+ &#8226;   <a href="#core">core</a>
  &#8226;   <a href="#http.cookiejar">http.cookiejar</a>
  &#8226;   <a href="#httpcore._synchronization">httpcore._synchronization</a>
  &#8226;   <a href="#importlib.util">importlib.util</a>
  &#8226;   <a href="#infra.http_tick_sink">infra.http_tick_sink</a>
+ &#8226;   <a href="#infra.raw_measurement_csv_sink">infra.raw_measurement_csv_sink</a>
  &#8226;   <a href="#infra.violations_csv_sink">infra.violations_csv_sink</a>
  &#8226;   <a href="#logging">logging</a>
  &#8226;   <a href="#multiprocessing.context">multiprocessing.context</a>
@@ -34215,6 +34088,7 @@ imported by:
  &#8226;   <a href="#httpx._client">httpx._client</a>
  &#8226;   <a href="#infra.clock">infra.clock</a>
  &#8226;   <a href="#infra.http_tick_sink">infra.http_tick_sink</a>
+ &#8226;   <a href="#infra.raw_measurement_csv_sink">infra.raw_measurement_csv_sink</a>
  &#8226;   <a href="#infra.violations_csv_sink">infra.violations_csv_sink</a>
  &#8226;   <a href="#logging">logging</a>
  &#8226;   <a href="#multiprocessing.connection">multiprocessing.connection</a>
@@ -34546,14 +34420,10 @@ imported by:
  &#8226;   <a href="#anyio.streams.stapled">anyio.streams.stapled</a>
  &#8226;   <a href="#anyio.streams.tls">anyio.streams.tls</a>
  &#8226;   <a href="#anyio.to_thread">anyio.to_thread</a>
- &#8226;   <a href="#app.processor">app.processor</a>
- &#8226;   <a href="#app.threshold_monitor">app.threshold_monitor</a>
  &#8226;   <a href="#asyncio.staggered">asyncio.staggered</a>
  &#8226;   <a href="#asyncio.timeouts">asyncio.timeouts</a>
  &#8226;   <a href="#config">config</a>
- &#8226;   <a href="#domain.models">domain.models</a>
- &#8226;   <a href="#domain.ports">domain.ports</a>
- &#8226;   <a href="#domain.thresholds">domain.thresholds</a>
+ &#8226;   <a href="#core">core</a>
  &#8226;   <a href="#functools">functools</a>
  &#8226;   <a href="#gsf">gsf</a>
  &#8226;   <a href="#gsf.binarystream">gsf.binarystream</a>
@@ -34619,8 +34489,10 @@ imported by:
  &#8226;   <a href="#importlib.resources.abc">importlib.resources.abc</a>
  &#8226;   <a href="#infra.http_tick_sink">infra.http_tick_sink</a>
  &#8226;   <a href="#infra.ppa_mapper">infra.ppa_mapper</a>
+ &#8226;   <a href="#infra.raw_measurement_csv_sink">infra.raw_measurement_csv_sink</a>
  &#8226;   <a href="#infra.sttp_client">infra.sttp_client</a>
  &#8226;   <a href="#infra.violations_csv_sink">infra.violations_csv_sink</a>
+ &#8226;   <a href="#infra.window_audit_csv_sink">infra.window_audit_csv_sink</a>
  &#8226;   <a href="#numpy._typing">numpy._typing</a>
  &#8226;   <a href="#numpy._typing._array_like">numpy._typing._array_like</a>
  &#8226;   <a href="#numpy._typing._char_codes">numpy._typing._char_codes</a>

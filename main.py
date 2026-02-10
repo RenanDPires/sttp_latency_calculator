@@ -7,7 +7,7 @@ from core import LatencyPipeline, ShardedWindowProcessor, WindowPolicy
 from infra.clock import SystemClock
 from infra.sinks import PrintSink
 from infra.key_extractors import PpaKeyExtractor
-from infra.sttp_client import SttpLatencySubscriber
+from infra.sttp_client import SttpSubscriber
 
 from infra.http_tick_sink import HttpTickSink
 from infra.ppa_mapper import DictPpaMapper
@@ -15,6 +15,7 @@ from infra.ppa_mapper import DictPpaMapper
 from core import ThresholdMonitor, ThresholdMonitorConfig
 from infra.violations_csv_sink import AsyncCsvViolationWriter
 from infra.window_audit_csv_sink import WindowCsvAuditWriter
+from infra.raw_measurement_csv_sink import AsyncCsvRawMeasurementWriter
 
 
 def _extract_ppas_from_subscription(text: str) -> list[int]:
@@ -79,6 +80,7 @@ def main():
     threshold_monitor = None
     violation_writer = None
     window_audit_writer = None
+    raw_measurement_writer = None
     monitor_keys: set[int] = set()
 
     if cfg.threshold_monitor and cfg.threshold_monitor.enabled:
@@ -109,6 +111,12 @@ def main():
         )
     else:
         print("[audit] enabled=False")
+
+    if cfg.audit_raw_debug_enabled:
+        raw_measurement_writer = AsyncCsvRawMeasurementWriter(
+            cfg.audit_raw_debug_csv_path,
+        )
+        raw_measurement_writer.start()
 
     # stats: apenas quando tick_write existe
     stats_keys: set[int] = set()
@@ -188,7 +196,7 @@ def main():
     key_extractor = PpaKeyExtractor()
 
     # IMPORTANTE: subscriber deve suportar stats_keys, threshold_monitor e violation_sink
-    sub = SttpLatencySubscriber(
+    sub = SttpSubscriber(
         pipeline=pipeline,
         clock=clock,
         key_extractor=key_extractor,
@@ -198,6 +206,7 @@ def main():
         window_audit_sink=window_audit_writer,
         audit_on_negative_latency=cfg.audit_on_negative_latency,
         log_raw_on_negative=cfg.audit_log_raw_on_negative,
+        raw_measurement_sink=raw_measurement_writer,
         align_window_sec=cfg.window_sec,
     )
 
@@ -222,8 +231,12 @@ def main():
                     if violation_writer is not None:
                         violation_writer.stop()
                 finally:
-                    sub.flush_audit_window()
-                    sub.dispose()
+                    try:
+                        if raw_measurement_writer is not None:
+                            raw_measurement_writer.stop()
+                    finally:
+                        sub.flush_audit_window()
+                        sub.dispose()
 
 
 if __name__ == "__main__":

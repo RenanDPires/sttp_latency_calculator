@@ -35,7 +35,7 @@ A aplicação produz dois tipos de saída:
 
 STTP Server
 ↓
-SttpLatencySubscriber (infra)
+SttpSubscriber (infra)
 ↓
 LatencyPipeline (core.py)
 ├─ ShardedWindowProcessor (core.py)
