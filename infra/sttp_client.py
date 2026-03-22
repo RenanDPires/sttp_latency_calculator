@@ -146,6 +146,16 @@ class SttpLatencySubscriber(Subscriber):
             md = self.measurement_metadata(m)
             key = int(self.key_extractor.key_from(m, md))
 
+            if self.raw_measurement_sink is not None:
+                self.raw_measurement_sink.publish(
+                    build_raw_measurement_record(
+                        arrival_epoch=float(arrival_epoch),
+                        measurement=m,
+                        metadata=md,
+                        ppa_key=key,
+                    )
+                )
+
             t_meas_epoch = float(m.datetime.timestamp())
             latency = (arrival_epoch - t_meas_epoch) * 1000.0
             window_start = (int(arrival_epoch) // self._audit_window_sec) * self._audit_window_sec
